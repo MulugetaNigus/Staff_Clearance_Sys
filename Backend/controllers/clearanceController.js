@@ -38,13 +38,13 @@ const CLEARANCE_DEPARTMENTS = [
 // @route   POST /api/clearance/requests
 // @access  Private
 const createClearanceRequest = asyncHandler(async (req, res, next) => {
-  const { purpose } = req.body;
-  let formData = {};
+  let parsedFormData = {};
   try {
-    formData = JSON.parse(req.body.formData);
+    parsedFormData = JSON.parse(req.body.formData);
   } catch (e) {
     return next(new AppError('Invalid form data format.', 400));
   }
+  const { purpose } = parsedFormData;
 
   const staffId = req.user.id || req.user._id;
 
@@ -75,8 +75,9 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
     staffId,
     purpose,
     initiatedBy: req.user._id,
-    formData,
+    formData: parsedFormData, // Use parsedFormData here
     uploadedFiles,
+    status: 'pending_hr_review', // Set initial status for HR review
   });
 
   await ActivityLog.create({
@@ -88,9 +89,67 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
 
   res.status(201).json({
     success: true,
-    message: 'Clearance request submitted and pending initial approval.',
+    message: 'Clearance request submitted and pending HR review.',
     data: clearanceRequest,
   });
+});
+
+// @desc    HR reviews a clearance request (approve/reject)
+// @route   PUT /api/clearance/requests/:id/hr-review
+// @access  Private (HROfficer)
+const hrReviewRequest = asyncHandler(async (req, res, next) => {
+  const { action, rejectionReason } = req.body; // action: 'approve' or 'reject'
+  const request = await ClearanceRequest.findById(req.params.id);
+
+  if (!request) {
+    return next(new AppError('Clearance request not found', 404));
+  }
+
+  // Ensure only HROfficer can perform this action
+  if (req.user.role !== 'HROfficer') {
+    return next(new AppError('Not authorized to perform this action', 403));
+  }
+
+  // Ensure request is in the correct status for HR review
+  if (request.status !== 'pending_hr_review') {
+    return next(new AppError(`Request is not in 'pending_hr_review' status. Current status: ${request.status}`, 400));
+  }
+
+  if (action === 'approve') {
+    request.status = 'pending_vp_approval';
+    await ActivityLog.create({
+      userId: req.user._id,
+      requestId: request._id,
+      action: 'HR_APPROVED',
+      description: `Clearance request approved by HR Officer ${req.user.name}`,
+    });
+    res.status(200).json({
+      success: true,
+      message: 'Clearance request sent to VP for approval.',
+      data: request,
+    });
+  } else if (action === 'reject') {
+    if (!rejectionReason) {
+      return next(new AppError('Rejection reason is required for rejection.', 400));
+    }
+    request.status = 'rejected';
+    request.rejectionReason = rejectionReason;
+    await ActivityLog.create({
+      userId: req.user._id,
+      requestId: request._id,
+      action: 'HR_REJECTED',
+      description: `Clearance request rejected by HR Officer ${req.user.name}. Reason: ${rejectionReason}`,
+    });
+    res.status(200).json({
+      success: true,
+      message: 'Clearance request rejected by HR.',
+      data: request,
+    });
+  } else {
+    return next(new AppError('Invalid action. Must be approve or reject', 400));
+  }
+
+  await request.save();
 });
 
 // @desc    Approve initial clearance request
@@ -105,6 +164,10 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
 
   if (req.user.role !== 'AcademicVicePresident') {
     return next(new AppError('Not authorized to perform this action', 403));
+  }
+
+  if (request.status !== 'pending_vp_approval') {
+    return next(new AppError(`Request is not in 'pending_vp_approval' status. Current status: ${request.status}`, 400));
   }
 
   request.status = 'in_progress';
@@ -167,6 +230,8 @@ const rejectInitialRequest = asyncHandler(async (req, res, next) => {
     data: request,
   });
 });
+
+  
 
 // @desc    Update a clearance step
 // @route   PUT /api/clearance/steps/:id
@@ -250,7 +315,7 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
 // @access  Private (VP ARCE)
 const getRequestsForVP = asyncHandler(async (req, res, next) => {
   const requests = await ClearanceRequest.find({
-    status: { $in: ['pending_approval', 'in_progress'] },
+    status: 'pending_vp_approval',
   }).populate('initiatedBy', 'name email department');
 
   res.status(200).json({
@@ -362,3 +427,5 @@ module.exports = {
   getClearanceRequestById,
   getMyReviewSteps,
 };
+
+// 07 77 676744  

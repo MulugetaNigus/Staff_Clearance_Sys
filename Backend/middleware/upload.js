@@ -38,4 +38,4 @@ const upload = multer({
 // Middleware for handling multiple file uploads
 const uploadClearanceFiles = upload.array('clearanceFiles', 10); // 'clearanceFiles' is the field name, 10 is max files
 
-module.exports = uploadClearanceFiles;
+module.exports = { upload, uploadClearanceFiles };

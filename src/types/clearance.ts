@@ -16,7 +16,7 @@ export interface ClearanceRequest {
     name: string;
   };
   purpose: string;
-  status: 'pending_approval' | 'in_progress' | 'cleared' | 'rejected';
+  status: 'pending_hr_review' | 'pending_vp_approval' | 'in_progress' | 'cleared' | 'rejected';
   createdAt: string;
   updatedAt: string;
   steps: ClearanceStep[];

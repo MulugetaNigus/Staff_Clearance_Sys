@@ -14,7 +14,7 @@ const {
 } = require('../controllers/userController');
 const { authenticateAdmin, authenticateToken, checkRole } = require('../middleware/authMiddleware');
 const { validateUserCreation, validateUserUpdate } = require('../middleware/validation');
-const upload = require('../middleware/upload');
+const { upload } = require('../middleware/upload');
 
 const router = express.Router();
 

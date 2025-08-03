@@ -20,8 +20,8 @@ const clearanceRequestSchema = new mongoose.Schema(
     status: {
       type: String,
       required: [true, 'Status is required'],
-      enum: ['pending_approval', 'in_progress', 'cleared', 'rejected'],
-      default: 'pending_approval',
+      enum: ['pending_hr_review', 'pending_vp_approval', 'in_progress', 'cleared', 'rejected'],
+      default: 'pending_hr_review',
     },
     supportingDocumentUrl: {
       type: String,

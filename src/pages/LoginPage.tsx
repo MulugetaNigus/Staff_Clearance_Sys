@@ -28,7 +28,11 @@ const LoginPage: React.FC = () => {
       }
     } catch (err) {
       toastUtils.dismiss(loadingToast);
-      toastUtils.auth.loginError(); // More specific error
+      if (err.response && err.response.data && err.response.data.message === 'Account is deactivated. Contact support.') {
+        toastUtils.auth.accountDeactivated();
+      } else {
+        toastUtils.auth.loginError(err);
+      }
     }
   };
 

@@ -22,7 +22,8 @@ export const toastUtils = {
   },
 
   // Error toasts
-  error: (message: string, options?: any) => {
+  error: (error: any, options?: any) => {
+    const message = error?.response?.data?.message || error?.message || 'An unexpected error occurred.';
     return toast.error(message, {
       icon: '❌',
       duration: 5000,
@@ -94,10 +95,23 @@ export const toastUtils = {
       });
     },
 
-    loginError: () => {
-      return toast.error('Invalid username or password. Please try again.', {
+    loginError: (error: any) => {
+      const message = error?.response?.data?.message || error?.message || 'Invalid username or password. Please try again.';
+      return toast.error(message, {
         icon: '🔒',
         duration: 4000,
+        style: {
+          background: '#EF4444',
+          color: '#fff',
+          fontWeight: '500',
+        },
+      });
+    },
+
+    accountDeactivated: () => {
+      return toast.error('Your account is deactivated. Please contact support.', {
+        icon: '🚫',
+        duration: 5000,
         style: {
           background: '#EF4444',
           color: '#fff',

@@ -1,8 +1,12 @@
 import API from './api';
 
 export const clearanceService = {
-  createClearanceRequest: async (data: { purpose: string; supportingDocumentUrl?: string; formData: any }) => {
-    const response = await API.post('/clearance/requests', data);
+  createClearanceRequest: async (data: FormData) => {
+    const response = await API.post('/clearance/requests', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

@@ -4,39 +4,58 @@ import { clearanceService } from '../services/clearanceService';
 import { toastUtils } from '../utils/toastUtils';
 
 interface ClearanceFormProps {
-  onSubmit: (data: { purpose: string; supportingDocumentUrl?: string; formData: any }) => Promise<void>;
+  onSubmit: (data: FormData) => Promise<void>;
   isLoading: boolean;
 }
 
 const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) => {
   const { user } = useAuth();
   const [purpose, setPurpose] = useState('');
-  const [supportingDocument, setSupportingDocument] = useState<File | null>(null);
-  const [formData, setFormData] = useState<string>('');
+  const [teacherId, setTeacherId] = useState('');
+  const [department, setDepartment] = useState('');
+  const [coursesTaught, setCoursesTaught] = useState('');
+  const [researchProjects, setResearchProjects] = useState('');
+  const [handoverNotes, setHandoverNotes] = useState('');
+  const [libraryClearanceStatus, setLibraryClearanceStatus] = useState('');
+  const [financialObligations, setFinancialObligations] = useState('');
+  const [supportingDocuments, setSupportingDocuments] = useState<FileList | null>(null);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!purpose) {
-      setError('Purpose of clearance is required.');
+    if (!purpose || !teacherId || !department || !coursesTaught || !handoverNotes) {
+      setError('Please fill in all required fields.');
       return;
     }
 
-    let supportingDocumentUrl = '';
-    if (supportingDocument) {
-      // In a real application, you would upload the file to a service
-      // and get back a URL. For this example, we'll just use a placeholder.
-      supportingDocumentUrl = `uploads/${supportingDocument.name}`;
+    setError('');
+
+    const formData = new FormData();
+    formData.append('formData', JSON.stringify({
+      purpose,
+      teacherId,
+      department,
+      coursesTaught,
+      researchProjects,
+      handoverNotes,
+      libraryClearanceStatus,
+      financialObligations,
+    }));
+
+    if (supportingDocuments) {
+      for (let i = 0; i < supportingDocuments.length; i++) {
+        formData.append('clearanceFiles', supportingDocuments[i]);
+      }
     }
 
-    await onSubmit({ purpose, supportingDocumentUrl, formData });
+    await onSubmit(formData);
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-8 sm:p-12 border-t-4 border-blue-600">
+    <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl p-8 sm:p-12 border-t-4 border-blue-600">
       <div className="mb-10 text-center">
-        <h2 className="text-4xl font-bold text-gray-900">Initiate Clearance</h2>
-        <p className="text-gray-600 mt-3 text-lg">Complete the form to start your clearance process.</p>
+        <h2 className="text-4xl font-bold text-gray-900">Initiate Teacher Clearance</h2>
+        <p className="text-gray-600 mt-3 text-lg">Complete the form to start your clearance process as a teacher.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -55,33 +74,125 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
             <option value="Retirement">Retirement</option>
             <option value="Transfer">Transfer</option>
             <option value="Leave">Leave</option>
+            <option value="End of Contract">End of Contract</option>
+            <option value="Study Leave">Study Leave</option>
           </select>
-          {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          {error && !purpose && <p className="text-red-500 text-sm mt-1">{error}</p>}
         </div>
 
         <div>
-          <label htmlFor="document" className="block text-sm font-medium text-gray-700 mb-2">Supporting Document (Optional)</label>
+          <label htmlFor="teacherId" className="block text-sm font-medium text-gray-700 mb-2">Teacher ID *</label>
           <input
-            id="document"
-            name="document"
-            type="file"
-            onChange={(e) => setSupportingDocument(e.target.files ? e.target.files[0] : null)}
+            type="text"
+            id="teacherId"
+            name="teacherId"
+            value={teacherId}
+            onChange={(e) => setTeacherId(e.target.value)}
+            required
             className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your teacher ID"
+          />
+          {error && !teacherId && <p className="text-red-500 text-sm mt-1">{error}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">Department *</label>
+          <input
+            type="text"
+            id="department"
+            name="department"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g., Computer Science, Physics"
+          />
+          {error && !department && <p className="text-red-500 text-sm mt-1">{error}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="coursesTaught" className="block text-sm font-medium text-gray-700 mb-2">Courses Taught (List them) *</label>
+          <textarea
+            id="coursesTaught"
+            name="coursesTaught"
+            value={coursesTaught}
+            onChange={(e) => setCoursesTaught(e.target.value)}
+            required
+            rows={4}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g., Introduction to Programming, Data Structures, Algorithms"
+          ></textarea>
+          {error && !coursesTaught && <p className="text-red-500 text-sm mt-1">{error}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="researchProjects" className="block text-sm font-medium text-gray-700 mb-2">Research Projects (If any, list titles and your role)</label>
+          <textarea
+            id="researchProjects"
+            name="researchProjects"
+            value={researchProjects}
+            onChange={(e) => setResearchProjects(e.target.value)}
+            rows={4}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g., Project A: Lead Researcher, Project B: Contributor"
+          ></textarea>
+        </div>
+
+        <div>
+          <label htmlFor="handoverNotes" className="block text-sm font-medium text-gray-700 mb-2">Handover Notes for Successor *</label>
+          <textarea
+            id="handoverNotes"
+            name="handoverNotes"
+            value={handoverNotes}
+            onChange={(e) => setHandoverNotes(e.target.value)}
+            required
+            rows={6}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Provide detailed notes for your successor, including ongoing tasks, student information, and any other relevant details."
+          ></textarea>
+          {error && !handoverNotes && <p className="text-red-500 text-sm mt-1">{error}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="libraryClearanceStatus" className="block text-sm font-medium text-gray-700 mb-2">Library Clearance Status</label>
+          <select
+            id="libraryClearanceStatus"
+            name="libraryClearanceStatus"
+            value={libraryClearanceStatus}
+            onChange={(e) => setLibraryClearanceStatus(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select status</option>
+            <option value="Cleared">Cleared</option>
+            <option value="Pending">Pending</option>
+            <option value="Not Applicable">Not Applicable</option>
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="financialObligations" className="block text-sm font-medium text-gray-700 mb-2">Outstanding Financial Obligations (If any)</label>
+          <input
+            type="text"
+            id="financialObligations"
+            name="financialObligations"
+            value={financialObligations}
+            onChange={(e) => setFinancialObligations(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g., Outstanding fees, loans, etc."
           />
         </div>
 
         <div>
-          <label htmlFor="formData" className="block text-sm font-medium text-gray-700 mb-2">Additional Details (Form Data) *</label>
-          <textarea
-            id="formData"
-            name="formData"
-            value={formData}
-            onChange={(e) => setFormData(e.target.value)}
-            required
-            rows={5}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter any additional details or form data here..."
-          ></textarea>
+          <label htmlFor="supportingDocuments" className="block text-sm font-medium text-gray-700 mb-2">Supporting Documents (Multiple files allowed)</label>
+          <input
+            id="supportingDocuments"
+            name="clearanceFiles"
+            type="file"
+            multiple
+            onChange={(e) => setSupportingDocuments(e.target.files)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+          <p className="text-sm text-gray-500 mt-2">Max 10 files, up to 5MB each. Allowed types: images (JPG, PNG, GIF) and PDF.</p>
         </div>
 
         <div className="flex justify-end pt-6 border-t mt-10">

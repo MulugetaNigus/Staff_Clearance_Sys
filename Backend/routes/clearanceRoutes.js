@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
-const uploadClearanceFiles = require('../middleware/upload');
+const { uploadClearanceFiles } = require('../middleware/upload');
 const {
   createClearanceRequest,
   approveInitialRequest,
@@ -11,7 +11,8 @@ const {
   getRequestsForVP,
   getClearanceRequests,
   getClearanceRequestById,
-  getMyReviewSteps, // Import the new controller
+  getMyReviewSteps,
+  hrReviewRequest, // Import the new HR review controller
 } = require('../controllers/clearanceController');
 
 // New route for reviewers to get their assigned steps
@@ -19,6 +20,7 @@ router.route('/steps/my-reviews').get(protect, getMyReviewSteps);
 
 // Existing Routes...
 router.route('/requests').post(protect, uploadClearanceFiles, createClearanceRequest);
+router.route('/requests/:id/hr-review').put(protect, authorize('HROfficer'), hrReviewRequest);
 router.route('/requests').get(protect, getClearanceRequests);
 router.route('/requests/vp-review').get(protect, authorize('AcademicVicePresident'), getRequestsForVP);
 router.route('/requests/:id/approve-initial').put(protect, authorize('AcademicVicePresident'), approveInitialRequest);

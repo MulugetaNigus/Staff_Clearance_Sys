@@ -82,7 +82,14 @@ const ReviewerDashboard: React.FC = () => {
                     <h3 className="text-xl font-bold text-gray-900 mb-1">{step.requestId.initiatedBy.name}</h3>
                     <p className="text-sm text-gray-500">Request ID: {step.requestId._id.slice(-6).toUpperCase()}</p>
                   </div>
-                  <span className={`px-4 py-1 text-xs font-semibold rounded-full ${step.requestId.status === 'pending_approval' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
+                  <span className={`px-4 py-1 text-xs font-semibold rounded-full
+                    ${step.requestId.status === 'pending_approval' ? 'bg-yellow-100 text-yellow-800' :
+                    step.requestId.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                    step.requestId.status === 'cleared' ? 'bg-green-100 text-green-800' :
+                    step.requestId.status === 'issue' ? 'bg-red-100 text-red-800' :
+                    step.requestId.status === 'rejected' ? 'bg-gray-100 text-gray-800' :
+                    'bg-gray-100 text-gray-800' // Default fallback
+                  }`}>
                     {step.requestId.status.replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
