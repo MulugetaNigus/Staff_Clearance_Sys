@@ -98,58 +98,82 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/clearance/requests/:id/hr-review
 // @access  Private (HROfficer)
 const hrReviewRequest = asyncHandler(async (req, res, next) => {
+  console.log('hrReviewRequest: Entering function.');
+  console.log('hrReviewRequest: User Role:', req.user?.role);
+  console.log('hrReviewRequest: Request ID:', req.params.id);
+  console.log('hrReviewRequest: Request Body:', req.body);
+
   const { action, rejectionReason } = req.body; // action: 'approve' or 'reject'
-  const request = await ClearanceRequest.findById(req.params.id);
 
-  if (!request) {
-    return next(new AppError('Clearance request not found', 404));
-  }
+  try {
+    const request = await ClearanceRequest.findById(req.params.id);
+    console.log('hrReviewRequest: Request found:', request ? request._id : 'None');
 
-  // Ensure only HROfficer can perform this action
-  if (req.user.role !== 'HROfficer') {
-    return next(new AppError('Not authorized to perform this action', 403));
-  }
-
-  // Ensure request is in the correct status for HR review
-  if (request.status !== 'pending_hr_review') {
-    return next(new AppError(`Request is not in 'pending_hr_review' status. Current status: ${request.status}`, 400));
-  }
-
-  if (action === 'approve') {
-    request.status = 'pending_vp_approval';
-    await ActivityLog.create({
-      userId: req.user._id,
-      requestId: request._id,
-      action: 'HR_APPROVED',
-      description: `Clearance request approved by HR Officer ${req.user.name}`,
-    });
-    res.status(200).json({
-      success: true,
-      message: 'Clearance request sent to VP for approval.',
-      data: request,
-    });
-  } else if (action === 'reject') {
-    if (!rejectionReason) {
-      return next(new AppError('Rejection reason is required for rejection.', 400));
+    if (!request) {
+      console.log('hrReviewRequest: Clearance request not found.');
+      return next(new AppError('Clearance request not found', 404));
     }
-    request.status = 'rejected';
-    request.rejectionReason = rejectionReason;
-    await ActivityLog.create({
-      userId: req.user._id,
-      requestId: request._id,
-      action: 'HR_REJECTED',
-      description: `Clearance request rejected by HR Officer ${req.user.name}. Reason: ${rejectionReason}`,
-    });
-    res.status(200).json({
-      success: true,
-      message: 'Clearance request rejected by HR.',
-      data: request,
-    });
-  } else {
-    return next(new AppError('Invalid action. Must be approve or reject', 400));
-  }
 
-  await request.save();
+    // Ensure only HROfficer or HRDevelopmentReviewer can perform this action
+    if (!['HROfficer', 'HRDevelopmentReviewer'].includes(req.user.role)) {
+      console.log(`hrReviewRequest: Unauthorized role: ${req.user.role}`);
+      return next(new AppError('Not authorized to perform this action', 403));
+    }
+
+    console.log('hrReviewRequest: Current request status:', request.status);
+    // Ensure request is in the correct status for HR review
+    if (request.status !== 'pending_hr_review') {
+      console.log(`hrReviewRequest: Invalid status for HR review. Current: ${request.status}`);
+      return next(new AppError(`Request is not in 'pending_hr_review' status. Current status: ${request.status}`, 400));
+    }
+
+    if (action === 'approve') {
+      console.log('hrReviewRequest: Action: Approve');
+      request.status = 'pending_vp_approval';
+      await ActivityLog.create({
+        userId: req.user._id,
+        requestId: request._id,
+        action: 'STEP_APPROVED',
+        description: `Clearance request approved by HR Officer ${req.user.name}`,
+      });
+      console.log('hrReviewRequest: Request status set to pending_vp_approval.');
+      res.status(200).json({
+        success: true,
+        message: 'Clearance request sent to VP for approval.',
+        data: request,
+      });
+    } else if (action === 'reject') {
+      console.log('hrReviewRequest: Action: Reject');
+      if (!rejectionReason) {
+        console.log('hrReviewRequest: Rejection reason missing.');
+        return next(new AppError('Rejection reason is required for rejection.', 400));
+      }
+      request.status = 'rejected';
+      request.rejectionReason = rejectionReason;
+      await ActivityLog.create({
+        userId: req.user._id,
+        requestId: request._id,
+        action: 'HR_REJECTED',
+        description: `Clearance request rejected by HR Officer ${req.user.name}. Reason: ${rejectionReason}`,
+      });
+      console.log('hrReviewRequest: Request status set to rejected.');
+      res.status(200).json({
+        success: true,
+        message: 'Clearance request rejected by HR.',
+        data: request,
+      });
+    } else {
+      console.log('hrReviewRequest: Invalid action provided.');
+      return next(new AppError('Invalid action. Must be approve or reject', 400));
+    }
+
+    console.log('hrReviewRequest: Saving request with status:', request.status);
+    await request.save();
+    console.log('hrReviewRequest: Request saved successfully.');
+  } catch (error) {
+    console.error('hrReviewRequest: An unexpected error occurred:', error);
+    return next(new AppError('An unexpected error occurred.', 500));
+  }
 });
 
 // @desc    Approve initial clearance request
@@ -334,7 +358,11 @@ const getClearanceRequests = asyncHandler(async (req, res) => {
   if (req.user.role === 'SystemAdmin') {
     // No change to query, gets all
   } 
-  // Reviewers see all active requests ready for their review
+  // HR Officer sees requests pending their review or rejected by them
+  else if (req.user.role === 'HRDevelopmentReviewer') {
+    query.status = { $in: ['pending_hr_review', 'rejected'] };
+  }
+  // Other Reviewers see active requests ready for their review
   else if (req.user.role.includes('Reviewer')) {
     query.status = { $in: ['in_progress', 'cleared'] };
   } 
@@ -416,8 +444,23 @@ const getMyReviewSteps = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Get HR pending requests
+// @route   GET /api/clearance/requests/hr-pending
+// @access  Private (HROfficer)
+const getHRPendingRequests = asyncHandler(async (req, res) => {
+  const requests = await ClearanceRequest.find({
+    status: 'pending_hr_review',
+  }).populate('initiatedBy', 'name email department');
+
+  res.status(200).json({
+    success: true,
+    data: requests,
+  });
+});
+
 module.exports = {
   createClearanceRequest,
+  hrReviewRequest,
   approveInitialRequest,
   rejectInitialRequest,
   updateClearanceStep,
@@ -426,6 +469,7 @@ module.exports = {
   getClearanceRequests,
   getClearanceRequestById,
   getMyReviewSteps,
+  getHRPendingRequests,
 };
 
 // 07 77 676744  

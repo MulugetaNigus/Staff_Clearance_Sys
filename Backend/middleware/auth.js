@@ -35,8 +35,10 @@ const protect = asyncHandler(async (req, res, next) => {
 
     // Add user to request object
     req.user = user;
+    console.log('PROTECT MIDDLEWARE: User attached to request:', req.user.id, req.user.role);
     next();
   } catch (error) {
+    console.error('PROTECT MIDDLEWARE: Error during token verification:', error.message);
     if (error.name === 'JsonWebTokenError') {
       return next(new AppError('Invalid token.', 401));
     } else if (error.name === 'TokenExpiredError') {
@@ -49,7 +51,9 @@ const protect = asyncHandler(async (req, res, next) => {
 // Authorize roles
 const authorize = (...roles) => {
   return (req, res, next) => {
+    console.log('AUTHORIZE MIDDLEWARE: Entering authorize function.');
     console.log('AUTHORIZE MIDDLEWARE: Required Roles:', roles);
+    console.log('AUTHORIZE MIDDLEWARE: User object in authorize:', req.user);
     console.log('AUTHORIZE MIDDLEWARE: User Role:', req.user?.role);
 
     if (!req.user) {

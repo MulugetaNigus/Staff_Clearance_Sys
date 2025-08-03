@@ -78,12 +78,21 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION! 💥 Shutting down...');
+  console.error(err.name, err.message, err.stack);
+  process.exit(1);
+});
+
 // Start server
 app.listen(PORT, () => {
-  console.log(`\n🚀 Teacher Clearance System Backend`);
+  console.log(`
+🚀 Teacher Clearance System Backend`);
   console.log(`🌐 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 API Health: http://localhost:${PORT}/health\n`);
+  console.log(`🔗 API Health: http://localhost:${PORT}/health
+`);
 });
 
 module.exports = app;

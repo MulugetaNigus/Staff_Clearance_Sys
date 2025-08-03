@@ -52,14 +52,14 @@ const LoginPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label 
-                htmlFor="email" // Changed from username to email
+                htmlFor="email"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Email Address
               </label>
               <input 
-                id="email" // Changed from username to email
-                type="email" // Changed input type
+                id="email"
+                type="email"
                 autoComplete="email"
                 required
                 value={email}
@@ -77,7 +77,7 @@ const LoginPage: React.FC = () => {
                 >
                   Password
                 </label>
-                <a href="#" className="text-sm text-blue-600 hover:underline">Forgot password?</a>
+                
               </div>
               <div className="relative">
                 <input 
@@ -95,7 +95,28 @@ const LoginPage: React.FC = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700"
                 >
-                  {/* Eye icon for password visibility */}
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.981 8.75C4.454 10.81 6.159 12.516 8.221 12.989m10.038-1.478c.246.146.507.278.78.398m-1.787-1.787A3.375 3.375 0 0 0 12 9.75c-1.03 0-1.9.693-2.312 1.647M15.75 14.25a3.375 3.375 0 0 1-3.375 3.375c-1.03 0-1.9-.693-2.312-1.647m1.787-1.787c.246.146.507.278.78.398m-1.787-1.787A3.375 3.375 0 0 0 12 9.75c-1.03 0-1.9.693-2.312 1.647M15.75 14.25a3.375 3.375 0 0 1-3.375 3.375c-1.03 0-1.9-.693-2.312-1.647" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75c-3.148 0-5.97-1.703-7.257-4.243a3.375 3.375 0 0 1 0-4.514C6.03 1.703 8.852 0 12 0s5.97 1.703 7.257 4.243a3.375 3.375 0 0 1 0 4.514C17.97 11.047 15.148 12.75 12 12.75z" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                  )}
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.981 8.75C4.454 10.81 6.159 12.516 8.221 12.989m10.038-1.478c.246.146.507.278.78.398m-1.787-1.787A3.375 3.375 0 0 0 12 9.75c-1.03 0-1.9.693-2.312 1.647M15.75 14.25a3.375 3.375 0 0 1-3.375 3.375c-1.03 0-1.9-.693-2.312-1.647m1.787-1.787c.246.146.507.278.78.398m-1.787-1.787A3.375 3.375 0 0 0 12 9.75c-1.03 0-1.9.693-2.312 1.647M15.75 14.25a3.375 3.375 0 0 1-3.375 3.375c-1.03 0-1.9-.693-2.312-1.647" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75c-3.148 0-5.97-1.703-7.257-4.243a3.375 3.375 0 0 1 0-4.514C6.03 1.703 8.852 0 12 0s5.97 1.703 7.257 4.243a3.375 3.375 0 0 1 0 4.514C17.97 11.047 15.148 12.75 12 12.75z" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                  )}
                 </button>
               </div>
             </div>
@@ -104,9 +125,10 @@ const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-lg font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-75 transition-all duration-300 ease-in-out transform hover:scale-105"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-lg font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-75 transition-all duration-300 ease-in-out transform hover:scale-105 group"
               >
                 {isLoading ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : 'Sign In'}
+                <span className="ml-2 transition-transform duration-300 group-hover:translate-x-1">→</span>
               </button>
             </div>
           </form>

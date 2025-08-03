@@ -8,7 +8,7 @@ import ReviewerDashboard from './ReviewerDashboard';
 import VPApprovalDashboard from './VPApprovalDashboard';
 import UserManagement from './UserManagement';
 import CreateUser from './CreateUser';
-import type { ClearanceStep } from '../types/clearance';
+import HRPendingRequestsDashboard from './HRPendingRequestsDashboard';
 import { clearanceService } from '../services/clearanceService';
 import { dashboardService } from '../services/dashboardService';
 
@@ -246,6 +246,8 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
       return <ReviewerDashboard />;
     case 'pending-reviews':
       return <ReviewerDashboard />;
+    case 'hr-pending-requests':
+      return <HRPendingRequestsDashboard />;
     case 'final-approval':
       return <GenericContent title="Final Approvals" icon="✅" />;
     case 'user-management':

@@ -29,7 +29,11 @@ export const clearanceService = {
     const response = await API.get('/clearance/steps/my-reviews');
     return response.data;
   },
-// };
+
+  getHRPendingRequests: async () => {
+    const response = await API.get('/clearance/requests/hr-pending');
+    return response.data;
+  },
 
   approveFinalRequest: async (id: string) => {
     const response = await API.put(`/clearance/requests/${id}/approve-final`);
@@ -48,6 +52,11 @@ export const clearanceService = {
 
   getClearanceRequestById: async (id: string) => {
     const response = await API.get(`/clearance/requests/${id}`);
+    return response.data;
+  },
+
+  hrReviewRequest: async (id: string, action: 'approve' | 'reject', rejectionReason?: string) => {
+    const response = await API.put(`/clearance/requests/${id}/hr-review`, { action, rejectionReason });
     return response.data;
   },
 };

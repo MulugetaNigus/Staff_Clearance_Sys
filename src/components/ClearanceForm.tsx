@@ -13,17 +13,12 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
   const [purpose, setPurpose] = useState('');
   const [teacherId, setTeacherId] = useState('');
   const [department, setDepartment] = useState('');
-  const [coursesTaught, setCoursesTaught] = useState('');
-  const [researchProjects, setResearchProjects] = useState('');
-  const [handoverNotes, setHandoverNotes] = useState('');
-  const [libraryClearanceStatus, setLibraryClearanceStatus] = useState('');
-  const [financialObligations, setFinancialObligations] = useState('');
   const [supportingDocuments, setSupportingDocuments] = useState<FileList | null>(null);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!purpose || !teacherId || !department || !coursesTaught || !handoverNotes) {
+    if (!purpose || !teacherId || !department) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -35,11 +30,6 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
       purpose,
       teacherId,
       department,
-      coursesTaught,
-      researchProjects,
-      handoverNotes,
-      libraryClearanceStatus,
-      financialObligations,
     }));
 
     if (supportingDocuments) {
@@ -108,78 +98,6 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
             placeholder="e.g., Computer Science, Physics"
           />
           {error && !department && <p className="text-red-500 text-sm mt-1">{error}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="coursesTaught" className="block text-sm font-medium text-gray-700 mb-2">Courses Taught (List them) *</label>
-          <textarea
-            id="coursesTaught"
-            name="coursesTaught"
-            value={coursesTaught}
-            onChange={(e) => setCoursesTaught(e.target.value)}
-            required
-            rows={4}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., Introduction to Programming, Data Structures, Algorithms"
-          ></textarea>
-          {error && !coursesTaught && <p className="text-red-500 text-sm mt-1">{error}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="researchProjects" className="block text-sm font-medium text-gray-700 mb-2">Research Projects (If any, list titles and your role)</label>
-          <textarea
-            id="researchProjects"
-            name="researchProjects"
-            value={researchProjects}
-            onChange={(e) => setResearchProjects(e.target.value)}
-            rows={4}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., Project A: Lead Researcher, Project B: Contributor"
-          ></textarea>
-        </div>
-
-        <div>
-          <label htmlFor="handoverNotes" className="block text-sm font-medium text-gray-700 mb-2">Handover Notes for Successor *</label>
-          <textarea
-            id="handoverNotes"
-            name="handoverNotes"
-            value={handoverNotes}
-            onChange={(e) => setHandoverNotes(e.target.value)}
-            required
-            rows={6}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Provide detailed notes for your successor, including ongoing tasks, student information, and any other relevant details."
-          ></textarea>
-          {error && !handoverNotes && <p className="text-red-500 text-sm mt-1">{error}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="libraryClearanceStatus" className="block text-sm font-medium text-gray-700 mb-2">Library Clearance Status</label>
-          <select
-            id="libraryClearanceStatus"
-            name="libraryClearanceStatus"
-            value={libraryClearanceStatus}
-            onChange={(e) => setLibraryClearanceStatus(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select status</option>
-            <option value="Cleared">Cleared</option>
-            <option value="Pending">Pending</option>
-            <option value="Not Applicable">Not Applicable</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="financialObligations" className="block text-sm font-medium text-gray-700 mb-2">Outstanding Financial Obligations (If any)</label>
-          <input
-            type="text"
-            id="financialObligations"
-            name="financialObligations"
-            value={financialObligations}
-            onChange={(e) => setFinancialObligations(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., Outstanding fees, loans, etc."
-          />
         </div>
 
         <div>
