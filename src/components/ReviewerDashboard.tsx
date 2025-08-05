@@ -23,6 +23,7 @@ const ReviewerDashboard: React.FC = () => {
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [signingStepId, setSigningStepId] = useState<string | null>(null);
+  const [approvalInitiated, setApprovalInitiated] = useState(false);
 
   useEffect(() => {
     const fetchMySteps = async () => {
@@ -53,6 +54,7 @@ const ReviewerDashboard: React.FC = () => {
       return;
     }
 
+    setApprovalInitiated(true);
     try {
       const response = await clearanceService.updateClearanceStep(stepId, { status, comment, signature });
       if (response.success) {
@@ -65,12 +67,19 @@ const ReviewerDashboard: React.FC = () => {
       }
     } catch (error) {
       toastUtils.error('An error occurred while updating the step.');
+    } finally {
+      setApprovalInitiated(false);
     }
   };
 
   const handleSaveSignature = async (signature: string) => {
     if (signingStepId) {
-      await handleUpdateStep(signingStepId, 'cleared', signature);
+      setApprovalInitiated(true);
+      try {
+        await handleUpdateStep(signingStepId, 'cleared', signature);
+      } finally {
+        setApprovalInitiated(false);
+      }
       setIsSignatureModalOpen(false);
       setSigningStepId(null);
     }
@@ -214,13 +223,13 @@ const ReviewerDashboard: React.FC = () => {
                     <button onClick={() => setCommentingStepId(step._id)} className="px-6 py-2 text-sm font-medium border border-red-300 text-red-700 rounded-xl hover:bg-red-50">
                       Flag Issue
                     </button>
-                    <button onClick={() => handleUpdateStep(step._id, 'cleared')} className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700">
+                    <button onClick={() => handleUpdateStep(step._id, 'cleared')} disabled={approvalInitiated || isSignatureModalOpen} className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50">
                       Clear
                     </button>
                     <button onClick={() => {
                       setSigningStepId(step._id);
                       setIsSignatureModalOpen(true);
-                    }} className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700">
+                    }} disabled={approvalInitiated || isSignatureModalOpen} className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50">
                       Sign & Clear
                     </button>
                   </>

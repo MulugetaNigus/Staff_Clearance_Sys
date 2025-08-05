@@ -23,6 +23,7 @@ const HRPendingRequestsDashboard: React.FC = () => {
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [signingRequestId, setSigningRequestId] = useState<string | null>(null);
+  const [approvalInitiated, setApprovalInitiated] = useState(false);
 
   useEffect(() => {
     const fetchHRPendingRequests = async () => {
@@ -47,6 +48,7 @@ const HRPendingRequestsDashboard: React.FC = () => {
       return;
     }
 
+    setApprovalInitiated(true);
     try {
       const response = await clearanceService.hrReviewRequest(requestId, action, rejectionReason);
       if (response.success) {
@@ -59,11 +61,14 @@ const HRPendingRequestsDashboard: React.FC = () => {
       }
     } catch (error) {
       toastUtils.error(`An error occurred while ${action}ing the request.`);
+    } finally {
+      setApprovalInitiated(false);
     }
   };
 
   const handleSaveSignature = async (signature: string) => {
     if (signingRequestId) {
+      setApprovalInitiated(true);
       console.log('Signature for request', signingRequestId, signature);
       try {
         const response = await clearanceService.hrReviewRequest(signingRequestId, 'approve', undefined, signature);
@@ -75,6 +80,8 @@ const HRPendingRequestsDashboard: React.FC = () => {
         }
       } catch (error) {
         toastUtils.error(`An error occurred while approving the request.`);
+      } finally {
+        setApprovalInitiated(false);
       }
       setIsSignatureModalOpen(false);
       setSigningRequestId(null);
@@ -190,13 +197,13 @@ const HRPendingRequestsDashboard: React.FC = () => {
                   <button onClick={() => setRejectingRequestId(request._id)} className="px-6 py-2 text-sm font-medium border border-red-300 text-red-700 rounded-xl hover:bg-red-50">
                     Reject
                   </button>
-                  <button onClick={() => handleHRReview(request._id, 'approve')} className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700">
+                  <button onClick={() => handleHRReview(request._id, 'approve')} disabled={approvalInitiated || isSignatureModalOpen} className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50">
                     Approve & Forward
                   </button>
                   <button onClick={() => {
                     setSigningRequestId(request._id);
                     setIsSignatureModalOpen(true);
-                  }} className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700">
+                  }} disabled={approvalInitiated || isSignatureModalOpen} className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50">
                     Sign & Approve
                   </button>
                 </div>

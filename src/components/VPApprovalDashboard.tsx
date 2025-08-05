@@ -21,6 +21,7 @@ const VPApprovalDashboard: React.FC = () => {
   const [previewFile, setPreviewFile] = useState<string | null>(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [signingRequestId, setSigningRequestId] = useState<string | null>(null);
+  const [approvalInitiated, setApprovalInitiated] = useState(false);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -40,6 +41,7 @@ const VPApprovalDashboard: React.FC = () => {
   }, []);
 
   const handleInitialApproval = async (id: string, signature?: string) => {
+    setApprovalInitiated(true);
     try {
       const response = await clearanceService.approveInitialRequest(id, signature);
       if (response.success) {
@@ -50,17 +52,21 @@ const VPApprovalDashboard: React.FC = () => {
       }
     } catch (error) {
       toastUtils.error('An error occurred while approving the request.');
+    } finally {
+      setApprovalInitiated(false);
     }
   };
 
   const handleSaveSignature = async (signature: string) => {
     if (signingRequestId) {
+      setApprovalInitiated(true);
       // Here you would typically send the signature to the backend
       // For now, we'll just log it and then approve the request
       console.log('Signature for request', signingRequestId, signature);
       await handleInitialApproval(signingRequestId, signature);
       setIsSignatureModalOpen(false);
       setSigningRequestId(null);
+      setApprovalInitiated(false);
     }
   };
 
@@ -150,14 +156,17 @@ const VPApprovalDashboard: React.FC = () => {
               <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end space-x-4">
                 <button
                   onClick={() => handleInitialApproval(request._id)}
-                  className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors duration-200 flex items-center"
+                  disabled={approvalInitiated || isSignatureModalOpen}
+                  className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors duration-200 flex items-center disabled:opacity-50"
                 >
                   Approve Initial Request
                 </button>
                 <button onClick={() => {
                     setSigningRequestId(request._id);
                     setIsSignatureModalOpen(true);
-                  }} className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700">
+                  }}
+                  disabled={approvalInitiated || isSignatureModalOpen}
+                  className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50">
                     Sign & Approve
                   </button>
               </div>
