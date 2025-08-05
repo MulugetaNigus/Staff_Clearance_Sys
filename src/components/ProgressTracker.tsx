@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ClearanceStep } from '../types/clearance';
 import { getDepartmentByRole } from '../types/departments';
+import { FaInbox } from 'react-icons/fa';
 
 interface ProgressTrackerProps {
   steps: ClearanceStep[];
@@ -13,6 +14,20 @@ const statusStyles = {
 };
 
 const ProgressTracker: React.FC<ProgressTrackerProps> = ({ steps }) => {
+  if (!steps || steps.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl shadow-lg p-8 border-t-4 border-blue-600 text-center flex flex-col justify-center items-center h-full">
+        <div className="w-28 h-28 bg-gray-100 rounded-full flex items-center justify-center border-4 border-gray-200 mb-6">
+          <FaInbox className="text-5xl text-gray-400" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-800">No Active Clearance Request</h2>
+        <p className="text-gray-500 mt-2 max-w-sm mx-auto">
+          It looks like you don't have any ongoing clearance requests. When you start one, its progress will be tracked here.
+        </p>
+      </div>
+    );
+  }
+
   const getStepInfo = (step: ClearanceStep) => {
     const department = getDepartmentByRole(step.reviewerRole);
     return {

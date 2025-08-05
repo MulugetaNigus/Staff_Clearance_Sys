@@ -39,7 +39,7 @@ app.use((req, res, next) => {
 });
 
 // Serve static files from the 'uploads' directory
-app.use('/uploads', express.static('Backend/uploads'));
+app.use('/uploads', express.static('uploads'));
 
 // Logging middleware
 if (process.env.NODE_ENV !== 'production') {
