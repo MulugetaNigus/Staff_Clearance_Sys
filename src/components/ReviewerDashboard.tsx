@@ -2,7 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { clearanceService } from '../services/clearanceService';
 import { toastUtils } from '../utils/toastUtils';
-import type { ClearanceStep } from '../types/clearance';
+import type { ClearanceRequest, ClearanceStep } from '../types/clearance';
+import { FaFilePdf, FaFileImage, FaDownload, FaEye, FaTimes } from 'react-icons/fa';
+
+const API_BASE_URL = 'http://localhost:5000';
+
+const getFileIcon = (fileName: string) => {
+  if (fileName.endsWith('.pdf')) return <FaFilePdf className="text-red-500 text-3xl" />;
+  if (/\.(jpg|jpeg|png|gif)$/i.test(fileName)) return <FaFileImage className="text-blue-500 text-3xl" />;
+  return null;
+};
 
 const ReviewerDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -10,6 +19,7 @@ const ReviewerDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [commentingStepId, setCommentingStepId] = useState<string | null>(null);
   const [comment, setComment] = useState('');
+  const [previewFile, setPreviewFile] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMySteps = async () => {
@@ -73,128 +83,119 @@ const ReviewerDashboard: React.FC = () => {
           <p className="text-gray-500 mt-2">You have no pending reviews at this time. Great job!</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-8">
           {steps.map((step) => (
             <div key={step.id} className="bg-white rounded-3xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
               <div className="p-7 flex-grow">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">{step.requestId.initiatedBy.name}</h3>
-                    <p className="text-sm text-gray-500">Request ID: {step.requestId._id.slice(-6).toUpperCase()}</p>
-                  </div>
-                  <span className={`px-4 py-1 text-xs font-semibold rounded-full
-                    ${step.requestId.status === 'pending_approval' ? 'bg-yellow-100 text-yellow-800' :
-                    step.requestId.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                    step.requestId.status === 'cleared' ? 'bg-green-100 text-green-800' :
-                    step.requestId.status === 'issue' ? 'bg-red-100 text-red-800' :
-                    step.requestId.status === 'rejected' ? 'bg-gray-100 text-gray-800' :
-                    'bg-gray-100 text-gray-800' // Default fallback
-                  }`}>
-                    {step.requestId.status.replace('_', ' ').toUpperCase()}
-                  </span>
-                </div>
-                <p className="text-base text-gray-700 leading-relaxed">
-                  <strong className="font-semibold">Purpose:</strong> {step.requestId.purpose}
-                </p>
-                <p className="text-sm text-gray-500 mt-3">
-                  <strong className="font-medium">Submitted:</strong> {new Date(step.requestId.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-              </div>
-
-              {step.status === 'pending' && (
-                commentingStepId === step.id ? (
-                  <div className="p-7 bg-gray-50 border-t border-gray-100">
-                    <textarea
-                      placeholder="Provide a clear reason for the issue..."
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      className="w-full p-4 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800 text-sm"
-                      rows={4}
-                    />
-                    <div className="flex justify-end space-x-4 mt-4">
-                      <button
-                        onClick={() => { setCommentingStepId(null); setComment(''); }}
-                        className="px-6 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-100 transition-colors duration-200"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => handleUpdateStep(step.id, 'issue')}
-                        disabled={!comment.trim()}
-                        className="px-6 py-2 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                        Confirm Issue
-                      </button>
+                <div className="grid md:grid-cols-3 gap-6">
+                  {/* Request Info */}
+                  <div className="md:col-span-2">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-1">{step.requestId.initiatedBy.name}</h3>
+                        <p className="text-sm text-gray-500">ID: {step.requestId.referenceCode}</p>
+                      </div>
+                      <span className={`px-4 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800`}>
+                        {step.requestId.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+                      <p><strong>Purpose:</strong> {step.requestId.purpose}</p>
+                      <p><strong>Department:</strong> {step.requestId.formData.department}</p>
+                      <p><strong>Teacher ID:</strong> {step.requestId.formData.teacherId}</p>
+                      <p><strong>Submitted:</strong> {new Date(step.requestId.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
-                ) : (
-                  <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end space-x-4">
-                    <button
-                      onClick={() => setCommentingStepId(step.id)}
-                      className="px-6 py-2 text-sm font-medium border border-red-300 text-red-700 rounded-xl hover:bg-red-50 transition-colors duration-200 flex items-center"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
+
+                  {/* Uploaded Files */}
+                  <div className="md:col-span-1">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-3">Uploaded Files</h4>
+                    {step.requestId.uploadedFiles.length > 0 ? (
+                      <ul className="space-y-3">
+                        {step.requestId.uploadedFiles
+                          .filter(file => {
+                            const userRole = user?.role;
+                            if (!userRole) return false;
+
+                            // Reviewers should only see files marked as 'all'
+                            return file.visibility === 'all';
+                          })
+                          .map(file => (
+                          <li key={file._id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                            <div className="flex items-center space-x-3 overflow-hidden">
+                              {getFileIcon(file.fileName)}
+                              <span className="text-sm font-medium text-gray-800 truncate">{file.fileName}</span>
+                            </div>
+                            <div className="flex items-center space-x-2 flex-shrink-0">
+                              <a href={`${API_BASE_URL}/${file.filePath}`} download target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600">
+                                <FaDownload />
+                              </a>
+                              <button onClick={() => setPreviewFile(`${API_BASE_URL}/${file.filePath}`)} className="p-2 text-gray-500 hover:text-green-600">
+                                <FaEye />
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-500">No files uploaded.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              {commentingStepId === step.id ? (
+                <div className="p-7 bg-gray-50 border-t border-gray-100">
+                  <textarea
+                    placeholder="Provide a clear reason for the issue..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    className="w-full p-4 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800 text-sm"
+                    rows={4}
+                  />
+                  <div className="flex justify-end space-x-4 mt-4">
+                    <button onClick={() => setCommentingStepId(null)} className="px-6 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-100">
+                      Cancel
+                    </button>
+                    <button onClick={() => handleUpdateStep(step.id, 'issue')} disabled={!comment.trim()} className="px-6 py-2 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50">
                       Flag Issue
                     </button>
-                    <button
-                      onClick={() => handleUpdateStep(step.id, 'cleared')}
-                      className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors duration-200 flex items-center"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      Clear
-                    </button>
                   </div>
-                )
-              )}
-
-              {step.status === 'cleared' && (
-                <div className="p-6 bg-green-50 border-t border-green-100 flex justify-end space-x-4">
-                  <span className="text-green-700 font-semibold flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    Cleared
-                  </span>
-                  <button
-                    onClick={() => handleUpdateStep(step.id, 'pending')} // Assuming 'pending' is the state to revert to
-                    className="px-6 py-2 text-sm font-medium border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors duration-200 flex items-center"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                    Undo Clear
-                  </button>
                 </div>
-              )}
-
-              {step.status === 'issue' && (
-                <div className="p-6 bg-red-50 border-t border-red-100 flex justify-end space-x-4">
-                  <span className="text-red-700 font-semibold flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    Issue Flagged
-                  </span>
-                  <button
-                    onClick={() => handleUpdateStep(step.id, 'pending')} // Assuming 'pending' is the state to revert to
-                    className="px-6 py-2 text-sm font-medium border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors duration-200 flex items-center"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                    Undo Issue
+              ) : (
+                <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end space-x-4">
+                  <button onClick={() => setCommentingStepId(step.id)} className="px-6 py-2 text-sm font-medium border border-red-300 text-red-700 rounded-xl hover:bg-red-50">
+                    Flag Issue
+                  </button>
+                  <button onClick={() => handleUpdateStep(step.id, 'cleared')} className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700">
+                    Clear
                   </button>
                 </div>
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* File Preview Modal */}
+      {previewFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h5 className="text-lg font-bold">File Preview</h5>
+              <button onClick={() => setPreviewFile(null)} className="p-2 rounded-full hover:bg-gray-200">
+                <FaTimes />
+              </button>
+            </div>
+            <div className="flex-grow p-4 overflow-auto">
+              {previewFile.endsWith('.pdf') ? (
+                <iframe src={previewFile} className="w-full h-full" title="File Preview"></iframe>
+              ) : (
+                <img src={previewFile} alt="Preview" className="max-w-full max-h-full mx-auto" />
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

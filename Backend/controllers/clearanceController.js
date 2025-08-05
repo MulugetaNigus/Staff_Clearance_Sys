@@ -44,7 +44,7 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
   } catch (e) {
     return next(new AppError('Invalid form data format.', 400));
   }
-  const { purpose } = parsedFormData;
+  const { purpose, fileMetadata, ...otherFormData } = parsedFormData;
 
   const staffId = req.user.id || req.user._id;
 
@@ -63,21 +63,25 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
 
   const referenceCode = `TCS-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`;
 
-  const uploadedFiles = req.files ? req.files.map(file => ({
-    fileName: file.originalname,
-    filePath: file.path, // Multer provides the full path
-    mimetype: file.mimetype,
-    size: file.size,
-  })) : [];
+  const uploadedFiles = req.files ? req.files.map((file, index) => {
+    const metadata = fileMetadata ? fileMetadata[index] : {};
+    return {
+      fileName: file.originalname,
+      filePath: file.path,
+      mimetype: file.mimetype,
+      size: file.size,
+      visibility: metadata.visibility || 'all',
+    };
+  }) : [];
 
   const clearanceRequest = await ClearanceRequest.create({
     referenceCode,
     staffId,
     purpose,
     initiatedBy: req.user._id,
-    formData: parsedFormData, // Use parsedFormData here
+    formData: otherFormData,
     uploadedFiles,
-    status: 'pending_hr_review', // Set initial status for HR review
+    status: 'pending_hr_review',
   });
 
   await ActivityLog.create({
@@ -340,11 +344,13 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
 const getRequestsForVP = asyncHandler(async (req, res, next) => {
   const requests = await ClearanceRequest.find({
     status: 'pending_vp_approval',
-  }).populate('initiatedBy', 'name email department');
+  }).populate('initiatedBy', 'name email department').lean();
+
+  const processedRequests = requests.map(processRequestFiles);
 
   res.status(200).json({
     success: true,
-    data: requests,
+    data: processedRequests,
   });
 });
 
@@ -426,17 +432,24 @@ const getMyReviewSteps = asyncHandler(async (req, res, next) => {
     const steps = await ClearanceStep.find({ reviewerRole: targetReviewerRole })
       .populate({
         path: 'requestId',
-        select: 'initiatedBy purpose status createdAt',
+        select: 'initiatedBy purpose status createdAt formData uploadedFiles',
         populate: {
           path: 'initiatedBy',
           select: 'name',
         },
-      });
+      }).lean();
 
-    console.log(`GET_MY_REVIEW_STEPS: Found ${steps.length} steps for reviewerRole: ${targetReviewerRole}.`);
+    const processedSteps = steps.map(step => {
+      if (step.requestId) {
+        step.requestId = processRequestFiles(step.requestId);
+      }
+      return step;
+    });
+
+    console.log(`GET_MY_REVIEW_STEPS: Found ${processedSteps.length} steps for reviewerRole: ${targetReviewerRole}.`);
     res.status(200).json({
       success: true,
-      data: steps,
+      data: processedSteps,
     });
   } catch (error) {
     console.error('GET_MY_REVIEW_STEPS: ERROR during database query or population:', error);
@@ -444,17 +457,45 @@ const getMyReviewSteps = asyncHandler(async (req, res, next) => {
   }
 });
 
+const processRequestFiles = (request) => {
+  const requestObj = request.toObject ? request.toObject() : { ...request };
+
+  if (!requestObj.uploadedFiles) {
+    requestObj.uploadedFiles = [];
+    return requestObj;
+  }
+
+  if (requestObj.formData && requestObj.formData.fileMetadata) {
+    const metadataMap = new Map(
+      requestObj.formData.fileMetadata.map(meta => [meta.fileName, meta.visibility])
+    );
+    requestObj.uploadedFiles = requestObj.uploadedFiles.map(file => ({
+      ...file,
+      visibility: file.visibility || metadataMap.get(file.fileName) || 'all',
+    }));
+  } else {
+    requestObj.uploadedFiles = requestObj.uploadedFiles.map(file => ({
+      ...file,
+      visibility: file.visibility || 'all',
+    }));
+  }
+
+  return requestObj;
+};
+
 // @desc    Get HR pending requests
 // @route   GET /api/clearance/requests/hr-pending
 // @access  Private (HROfficer)
 const getHRPendingRequests = asyncHandler(async (req, res) => {
   const requests = await ClearanceRequest.find({
     status: 'pending_hr_review',
-  }).populate('initiatedBy', 'name email department');
+  }).populate('initiatedBy', 'name email department').lean();
+
+  const processedRequests = requests.map(processRequestFiles);
 
   res.status(200).json({
     success: true,
-    data: requests,
+    data: processedRequests,
   });
 });
 

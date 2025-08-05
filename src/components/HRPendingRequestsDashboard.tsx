@@ -106,7 +106,21 @@ const HRPendingRequestsDashboard: React.FC = () => {
                     <h4 className="text-lg font-semibold text-gray-800 mb-3">Uploaded Files</h4>
                     {request.uploadedFiles.length > 0 ? (
                       <ul className="space-y-3">
-                        {request.uploadedFiles.map(file => (
+                        {request.uploadedFiles
+                          .filter(file => {
+                            const userRole = user?.role;
+                            if (!userRole) return false;
+
+                            if (userRole === 'HROfficer' || userRole === 'HRDevelopmentReviewer') {
+                              return file.visibility === 'hr' || file.visibility === 'all';
+                            }
+                            if (userRole === 'AcademicVicePresident') {
+                              return file.visibility === 'vp' || file.visibility === 'all';
+                            }
+                            // For other roles, only show files marked as 'all'
+                            return file.visibility === 'all';
+                          })
+                          .map(file => (
                           <li key={file._id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
                             <div className="flex items-center space-x-3 overflow-hidden">
                               {getFileIcon(file.fileName)}

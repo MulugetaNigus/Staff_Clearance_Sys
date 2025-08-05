@@ -69,6 +69,11 @@ const clearanceRequestSchema = new mongoose.Schema(
         filePath: String,
         mimetype: String,
         size: Number,
+        visibility: {
+          type: String,
+          enum: ['hr', 'vp', 'all'],
+          default: 'all',
+        },
       },
     ],
   },

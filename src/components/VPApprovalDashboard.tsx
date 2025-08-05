@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { clearanceService } from '../services/clearanceService';
 import { toastUtils } from '../utils/toastUtils';
-import { generateClearanceCertificate } from '../utils/pdfGenerator';
-import emailjs from 'emailjs-com';
-import type { ClearanceRequest } from '../types/clearance'; // Assuming you have this type
+import type { ClearanceRequest } from '../types/clearance';
+import { FaFilePdf, FaFileImage, FaDownload, FaEye, FaTimes } from 'react-icons/fa';
+
+const API_BASE_URL = 'http://localhost:5000';
+
+const getFileIcon = (fileName: string) => {
+  if (fileName.endsWith('.pdf')) return <FaFilePdf className="text-red-500 text-3xl" />;
+  if (/\.(jpg|jpeg|png|gif)$/i.test(fileName)) return <FaFileImage className="text-blue-500 text-3xl" />;
+  return null;
+};
 
 const VPApprovalDashboard: React.FC = () => {
+  const { user } = useAuth();
   const [requests, setRequests] = useState<ClearanceRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [previewFile, setPreviewFile] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -40,51 +50,9 @@ const VPApprovalDashboard: React.FC = () => {
     }
   };
 
-  const handleFinalApproval = async (id: string) => {
-    try {
-      const response = await clearanceService.approveFinalRequest(id);
-      if (response.success) {
-        toastUtils.success('Final approval successful.');
-        setRequests(requests.filter(req => req._id !== id));
-
-        // Generate PDF
-        const pdf = generateClearanceCertificate(response.data);
-        const pdfData = pdf.output('blob');
-
-        // Send email
-        const emailParams = {
-          to_name: response.data.initiatedBy.name,
-          to_email: response.data.initiatedBy.email,
-          from_name: 'Woldia University',
-          message: 'Please find your clearance certificate attached.',
-        };
-
-        // You would need to configure your EmailJS account and replace these with your actual IDs
-        emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', emailParams, 'YOUR_USER_ID')
-          .then((result) => {
-              console.log(result.text);
-              toastUtils.success('Certificate emailed successfully.');
-          }, (error) => {
-              console.log(error.text);
-              toastUtils.error('Failed to email certificate.');
-          });
-
-        // Offer PDF download
-        pdf.save(`clearance-certificate-${response.data.referenceCode}.pdf`);
-      } else {
-        toastUtils.error(response.message || 'Failed to grant final approval.');
-      }
-    } catch (error) {
-      toastUtils.error('An error occurred while granting final approval.');
-    }
-  };
-
   if (isLoading) {
     return <div className="text-center p-10">Loading VP requests...</div>;
   }
-
-  const initialApprovalRequests = requests.filter(req => req.status === 'pending_vp_approval');
-  const finalApprovalRequests = requests.filter(req => req.status === 'in_progress');
 
   return (
     <div className="space-y-8">
@@ -93,100 +61,110 @@ const VPApprovalDashboard: React.FC = () => {
         <p className="text-gray-600 mt-2">Review and approve clearance requests.</p>
       </div>
 
-      {initialApprovalRequests.length === 0 && finalApprovalRequests.length === 0 ? (
+      {requests.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-6xl mb-4">🎉</div>
           <h3 className="text-2xl font-bold text-gray-800">No Pending VP Reviews!</h3>
           <p className="text-gray-500 mt-2">All clearance requests have been reviewed by the VP.</p>
         </div>
       ) : (
-        <>
-          {initialApprovalRequests.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900">Initial Approvals</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {initialApprovalRequests.map((request) => (
-                  <div key={request._id} className="bg-white rounded-3xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
-                    <div className="p-7 flex-grow">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-1">{request.initiatedBy.name}</h3>
-                          <p className="text-sm text-gray-500">Request ID: {request._id.slice(-6).toUpperCase()}</p>
-                        </div>
-                        <span className={`px-4 py-1 text-xs font-semibold rounded-full
-                          ${request.status === 'pending_vp_approval' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800' // Default fallback
-                        }`}>
-                          {request.status.replace('_', ' ').toUpperCase()}
-                        </span>
+        <div className="space-y-8">
+          {requests.map((request) => (
+            <div key={request._id} className="bg-white rounded-3xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
+              <div className="p-7 flex-grow">
+                <div className="grid md:grid-cols-3 gap-6">
+                  {/* Request Info */}
+                  <div className="md:col-span-2">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-1">{request.initiatedBy.name}</h3>
+                        <p className="text-sm text-gray-500">ID: {request.referenceCode}</p>
                       </div>
-                      <p className="text-base text-gray-700 leading-relaxed">
-                        <strong className="font-semibold">Purpose:</strong> {request.purpose}
-                      </p>
-                      <p className="text-sm text-gray-500 mt-3">
-                        <strong className="font-medium">Submitted:</strong> {new Date(request.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                      </p>
+                      <span className={`px-4 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800`}>
+                        {request.status.replace('_', ' ').toUpperCase()}
+                      </span>
                     </div>
-                    <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end space-x-4">
-                      <button
-                        onClick={() => handleInitialApproval(request._id)}
-                        className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors duration-200 flex items-center"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Approve Initial Request
-                      </button>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+                      <p><strong>Purpose:</strong> {request.purpose}</p>
+                      <p><strong>Department:</strong> {request.formData.department}</p>
+                      <p><strong>Teacher ID:</strong> {request.formData.teacherId}</p>
+                      <p><strong>Submitted:</strong> {new Date(request.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {finalApprovalRequests.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900">Final Approvals</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {finalApprovalRequests.map((request) => (
-                  <div key={request._id} className="bg-white rounded-3xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
-                    <div className="p-7 flex-grow">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-1">{request.initiatedBy.name}</h3>
-                          <p className="text-sm text-gray-500">Request ID: {request._id.slice(-6).toUpperCase()}</p>
-                        </div>
-                        <span className={`px-4 py-1 text-xs font-semibold rounded-full
-                          ${request.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800' // Default fallback
-                        }`}>
-                          {request.status.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
-                      <p className="text-base text-gray-700 leading-relaxed">
-                        <strong className="font-semibold">Purpose:</strong> {request.purpose}
-                      </p>
-                      <p className="text-sm text-gray-500 mt-3">
-                        <strong className="font-medium">Submitted:</strong> {new Date(request.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                      </p>
-                    </div>
-                    <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end space-x-4">
-                      <button
-                        onClick={() => handleFinalApproval(request._id)}
-                        className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors duration-200 flex items-center"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Approve Final Request
-                      </button>
-                    </div>
+                  {/* Uploaded Files */}
+                  <div className="md:col-span-1">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-3">Uploaded Files</h4>
+                    {request.uploadedFiles.length > 0 ? (
+                      <ul className="space-y-3">
+                        {request.uploadedFiles
+                          .filter(file => {
+                            const userRole = user?.role;
+                            if (!userRole) return false;
+
+                            if (userRole === 'AcademicVicePresident') {
+                              return file.visibility === 'vp' || file.visibility === 'all';
+                            }
+                            // For other roles, only show files marked as 'all'
+                            return file.visibility === 'all';
+                          })
+                          .map(file => (
+                          <li key={file._id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                            <div className="flex items-center space-x-3 overflow-hidden">
+                              {getFileIcon(file.fileName)}
+                              <span className="text-sm font-medium text-gray-800 truncate">{file.fileName}</span>
+                            </div>
+                            <div className="flex items-center space-x-2 flex-shrink-0">
+                              <a href={`${API_BASE_URL}/${file.filePath}`} download target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600">
+                                <FaDownload />
+                              </a>
+                              <button onClick={() => setPreviewFile(`${API_BASE_URL}/${file.filePath}`)} className="p-2 text-gray-500 hover:text-green-600">
+                                <FaEye />
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-500">No files uploaded.</p>
+                    )}
                   </div>
-                ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end space-x-4">
+                <button
+                  onClick={() => handleInitialApproval(request._id)}
+                  className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors duration-200 flex items-center"
+                >
+                  Approve Initial Request
+                </button>
               </div>
             </div>
-          )}
-        </>
+          ))}
+        </div>
+      )}
+
+      {/* File Preview Modal */}
+      {previewFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h5 className="text-lg font-bold">File Preview</h5>
+              <button onClick={() => setPreviewFile(null)} className="p-2 rounded-full hover:bg-gray-200">
+                <FaTimes />
+              </button>
+            </div>
+            <div className="flex-grow p-4 overflow-auto">
+              {previewFile.endsWith('.pdf') ? (
+                <iframe src={previewFile} className="w-full h-full" title="File Preview"></iframe>
+              ) : (
+                <img src={previewFile} alt="Preview" className="max-w-full max-h-full mx-auto" />
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

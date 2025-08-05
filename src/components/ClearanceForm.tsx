@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { FaFilePdf, FaFileImage, FaFileAlt, FaTimes } from 'react-icons/fa';
+import { FaFilePdf, FaFileImage, FaFileAlt, FaTimes, FaUsers, FaUserShield, FaUserTie } from 'react-icons/fa';
 
 interface ClearanceFormProps {
   onSubmit: (data: FormData) => Promise<void>;
   isLoading: boolean;
+}
+
+type FileVisibility = 'hr' | 'vp' | 'all';
+
+interface UploadedFile {
+  file: File;
+  visibility: FileVisibility;
 }
 
 const getFileIcon = (fileName: string) => {
@@ -26,18 +33,22 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
   const [purpose, setPurpose] = useState('');
   const [teacherId, setTeacherId] = useState('');
   const [department, setDepartment] = useState('');
-  const [supportingDocuments, setSupportingDocuments] = useState<File[]>([]);
+  const [supportingDocuments, setSupportingDocuments] = useState<UploadedFile[]>([]);
   const [error, setError] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
+      const newFiles = Array.from(e.target.files).map(file => ({ file, visibility: 'all' as FileVisibility }));
       setSupportingDocuments(prevFiles => [...prevFiles, ...newFiles]);
     }
   };
 
   const handleRemoveFile = (index: number) => {
     setSupportingDocuments(prevFiles => prevFiles.filter((_, i) => i !== index));
+  };
+
+  const handleVisibilityChange = (index: number, visibility: FileVisibility) => {
+    setSupportingDocuments(prevFiles => prevFiles.map((file, i) => i === index ? { ...file, visibility } : file));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,13 +65,12 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
       purpose,
       teacherId,
       department,
+      fileMetadata: supportingDocuments.map(doc => ({ fileName: doc.file.name, visibility: doc.visibility }))
     }));
 
-    if (supportingDocuments.length > 0) {
-      supportingDocuments.forEach(file => {
-        formData.append('clearanceFiles', file);
-      });
-    }
+    supportingDocuments.forEach(doc => {
+      formData.append('clearanceFiles', doc.file);
+    });
 
     await onSubmit(formData);
   };
@@ -69,7 +79,7 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
     <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl p-8 sm:p-12 border-t-4 border-blue-600">
       <div className="mb-10 text-center">
         <h2 className="text-4xl font-bold text-gray-900">Initiate Teacher Clearance</h2>
-        <p className="text-gray-600 mt-3 text-lg">Complete the form to start your clearance process as a teacher.</p>
+        <p className="text-gray-600 mt-3 text-lg">Complete the form to start your clearance process.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -132,7 +142,7 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
                 <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <div className="flex text-sm text-gray-600">
-                <label htmlFor="supportingDocuments" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                <label htmlFor="supportingDocuments" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
                   <span>Upload files</span>
                   <input id="supportingDocuments" name="clearanceFiles" type="file" multiple className="sr-only" onChange={handleFileChange} />
                 </label>
@@ -147,22 +157,40 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
           <div>
             <h3 className="text-lg font-medium text-gray-900">Uploaded Files</h3>
             <ul className="mt-4 space-y-3">
-              {supportingDocuments.map((file, index) => (
+              {supportingDocuments.map((doc, index) => (
                 <li key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{getFileIcon(file.name)}</span>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{file.name}</p>
-                      <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                  <div className="flex items-center space-x-3 overflow-hidden">
+                    <span className="text-2xl">{getFileIcon(doc.file.name)}</span>
+                    <div className="truncate">
+                      <p className="text-sm font-medium text-gray-800 truncate">{doc.file.name}</p>
+                      <p className="text-xs text-gray-500">{formatFileSize(doc.file.size)}</p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFile(index)}
-                    className="p-1.5 text-gray-500 rounded-full hover:bg-red-100 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                  >
-                    <FaTimes className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center space-x-3">
+                    <div className="relative">
+                      <select
+                        value={doc.visibility}
+                        onChange={(e) => handleVisibilityChange(index, e.target.value as FileVisibility)}
+                        className="pl-8 pr-4 py-1.5 border border-gray-300 rounded-md shadow-sm text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        <option value="all">All Departments</option>
+                        <option value="hr">HR Only</option>
+                        <option value="vp">VP Only</option>
+                      </select>
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                        {doc.visibility === 'all' && <FaUsers className="text-gray-500" />}
+                        {doc.visibility === 'hr' && <FaUserShield className="text-red-500" />}
+                        {doc.visibility === 'vp' && <FaUserTie className="text-blue-500" />}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile(index)}
+                      className="p-1.5 text-gray-500 rounded-full hover:bg-red-100 hover:text-red-600"
+                    >
+                      <FaTimes className="h-4 w-4" />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
