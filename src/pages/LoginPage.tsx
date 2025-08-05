@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { toastUtils } from '../utils/toastUtils';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { FaEye, FaEyeDropper } from 'react-icons/fa6'
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState(''); // Changed from username to email
@@ -12,15 +13,15 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const loadingToast = toastUtils.loading('Signing in...');
-    
+
     try {
       const { mustChangePassword } = await login({ email, password }); // Changed from username to email
-      
+
       toastUtils.dismiss(loadingToast);
       toastUtils.auth.loginSuccess();
-      
+
       if (mustChangePassword) {
         navigate('/force-change-password');
       } else {
@@ -51,13 +52,13 @@ const LoginPage: React.FC = () => {
         <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label 
+              <label
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Email Address
               </label>
-              <input 
+              <input
                 id="email"
                 type="email"
                 autoComplete="email"
@@ -71,16 +72,16 @@ const LoginPage: React.FC = () => {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label 
+                <label
                   htmlFor="password"
                   className="block text-sm font-medium text-gray-700"
                 >
                   Password
                 </label>
-                
+
               </div>
               <div className="relative">
-                <input 
+                <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
@@ -106,17 +107,12 @@ const LoginPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     </svg>
                   )}
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.981 8.75C4.454 10.81 6.159 12.516 8.221 12.989m10.038-1.478c.246.146.507.278.78.398m-1.787-1.787A3.375 3.375 0 0 0 12 9.75c-1.03 0-1.9.693-2.312 1.647M15.75 14.25a3.375 3.375 0 0 1-3.375 3.375c-1.03 0-1.9-.693-2.312-1.647m1.787-1.787c.246.146.507.278.78.398m-1.787-1.787A3.375 3.375 0 0 0 12 9.75c-1.03 0-1.9.693-2.312 1.647M15.75 14.25a3.375 3.375 0 0 1-3.375 3.375c-1.03 0-1.9-.693-2.312-1.647" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75c-3.148 0-5.97-1.703-7.257-4.243a3.375 3.375 0 0 1 0-4.514C6.03 1.703 8.852 0 12 0s5.97 1.703 7.257 4.243a3.375 3.375 0 0 1 0 4.514C17.97 11.047 15.148 12.75 12 12.75z" />
-                    </svg>
+                  {/* {showPassword ? (
+                    <FaEye />
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                    </svg>
-                  )}
+                    <FaEyeDropper />
+
+                  )} */}
                 </button>
               </div>
             </div>
@@ -134,17 +130,17 @@ const LoginPage: React.FC = () => {
           </form>
         </div>
       </div>
-      
+
       {/* Demo Credentials Section */}
       {/* <div className="max-w-3xl w-full mx-auto mt-8">
         <div className="bg-white rounded-2xl shadow-xl p-6">
            <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">Demo Login Credentials</h3>
            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-center max-h-48 overflow-y-auto p-2 rounded-lg bg-gray-50">
              {/* Demo user credentials */}
-           {/* </div> */}
-        {/* // </div> */}
+      {/* </div> */}
       {/* // </div> */}
-      
+      {/* // </div> */}
+
     </div>
   );
 };
