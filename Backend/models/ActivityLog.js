@@ -29,7 +29,8 @@ const activityLogSchema = new mongoose.Schema(
         'LOGIN',
         'LOGOUT',
         'PASSWORD_CHANGED',
-        'PROFILE_UPDATED'
+        'PROFILE_UPDATED',
+        'STEP_HIDDEN'
       ],
     },
     description: {

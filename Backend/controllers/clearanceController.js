@@ -3,6 +3,7 @@ const ClearanceStep = require('../models/ClearanceStep');
 const ActivityLog = require('../models/ActivityLog');
 const { asyncHandler } = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
+const { saveBase64Image } = require('../utils/helpers');
 
 const CLEARANCE_DEPARTMENTS = [
   { id: '1', name: 'Academic Department Head', reviewerRole: 'AcademicDepartmentReviewer', order: 1 },
@@ -107,7 +108,7 @@ const hrReviewRequest = asyncHandler(async (req, res, next) => {
   console.log('hrReviewRequest: Request ID:', req.params.id);
   console.log('hrReviewRequest: Request Body:', req.body);
 
-  const { action, rejectionReason } = req.body; // action: 'approve' or 'reject'
+  const { action, rejectionReason, signature } = req.body; // action: 'approve' or 'reject'
 
   try {
     const request = await ClearanceRequest.findById(req.params.id);
@@ -134,6 +135,10 @@ const hrReviewRequest = asyncHandler(async (req, res, next) => {
     if (action === 'approve') {
       console.log('hrReviewRequest: Action: Approve');
       request.status = 'pending_vp_approval';
+      if (signature) {
+        const signaturePath = await saveBase64Image(signature, 'uploads');
+        request.hrSignature = signaturePath;
+      }
       await ActivityLog.create({
         userId: req.user._id,
         requestId: request._id,
@@ -184,6 +189,7 @@ const hrReviewRequest = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/clearance/requests/:id/approve-initial
 // @access  Private (VP ARCE)
 const approveInitialRequest = asyncHandler(async (req, res, next) => {
+  const { signature } = req.body;
   const request = await ClearanceRequest.findById(req.params.id);
 
   if (!request) {
@@ -199,6 +205,10 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
   }
 
   request.status = 'in_progress';
+  if (signature) {
+    const signaturePath = await saveBase64Image(signature, 'uploads');
+    request.vpSignature = signaturePath;
+  }
   await request.save();
 
   const clearanceSteps = CLEARANCE_DEPARTMENTS.map((dept) => ({
@@ -265,14 +275,21 @@ const rejectInitialRequest = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/clearance/steps/:id
 // @access  Private (Reviewer)
 const updateClearanceStep = asyncHandler(async (req, res, next) => {
-  const { status, comment } = req.body;
+  const { status, comment, signature } = req.body;
   const step = await ClearanceStep.findById(req.params.id);
 
   if (!step) {
     return next(new AppError('Clearance step not found', 404));
   }
 
-  if (step.reviewerRole !== req.user.role) {
+  const authorizedRoles = [step.reviewerRole];
+  if (step.reviewerRole === 'ICTReviewer') {
+    authorizedRoles.push('ICTExcute');
+  }
+  // Add other mappings here if necessary
+  // e.g., if (step.reviewerRole === 'FinanceReviewer') { authorizedRoles.push('FinanceExcute'); }
+
+  if (!authorizedRoles.includes(req.user.role)) {
     return next(new AppError('Not authorized to review this step', 403));
   }
 
@@ -284,6 +301,12 @@ const updateClearanceStep = asyncHandler(async (req, res, next) => {
   }
   step.reviewedBy = req.user._id;
   step.lastUpdatedAt = new Date();
+
+  if (signature) {
+    const signaturePath = await saveBase64Image(signature, 'uploads');
+    step.signature = signaturePath;
+  }
+
   await step.save();
 
   await ActivityLog.create({
@@ -429,7 +452,10 @@ const getMyReviewSteps = asyncHandler(async (req, res, next) => {
   console.log(`GET_MY_REVIEW_STEPS: Determined targetReviewerRole: ${targetReviewerRole}`);
 
   try {
-    const steps = await ClearanceStep.find({ reviewerRole: targetReviewerRole })
+    const steps = await ClearanceStep.find({
+      reviewerRole: targetReviewerRole,
+      hiddenFor: { $ne: req.user._id }
+    })
       .populate({
         path: 'requestId',
         select: 'initiatedBy purpose status createdAt formData uploadedFiles',
@@ -499,6 +525,43 @@ const getHRPendingRequests = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Hide a clearance step from a reviewer's view
+// @route   PUT /api/clearance/steps/:id/hide
+// @access  Private (Reviewer)
+const hideClearanceStep = asyncHandler(async (req, res, next) => {
+  const step = await ClearanceStep.findById(req.params.id);
+
+  if (!step) {
+    return next(new AppError('Clearance step not found', 404));
+  }
+
+  const authorizedRoles = [step.reviewerRole];
+  if (step.reviewerRole === 'ICTReviewer') {
+    authorizedRoles.push('ICTExcute');
+  }
+  // Add other mappings here if necessary
+
+  if (!authorizedRoles.includes(req.user.role)) {
+    return next(new AppError('Not authorized to hide this step', 403));
+  }
+
+  step.hiddenFor.push(req.user._id);
+  await step.save();
+
+  await ActivityLog.create({
+    userId: req.user._id,
+    requestId: step.requestId,
+    action: 'STEP_HIDDEN',
+    description: `Clearance step for ${step.department} hidden by ${req.user.name}`,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Clearance step hidden successfully.',
+    data: {},
+  });
+});
+
 module.exports = {
   createClearanceRequest,
   hrReviewRequest,
@@ -511,6 +574,7 @@ module.exports = {
   getClearanceRequestById,
   getMyReviewSteps,
   getHRPendingRequests,
+  hideClearanceStep,
 };
 
 // 07 77 676744  

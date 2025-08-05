@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SignatureModal from './SignatureModal';
 import { useAuth } from '../context/AuthContext';
 import { clearanceService } from '../services/clearanceService';
 import { toastUtils } from '../utils/toastUtils';
@@ -18,6 +19,8 @@ const VPApprovalDashboard: React.FC = () => {
   const [requests, setRequests] = useState<ClearanceRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [signingRequestId, setSigningRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -36,9 +39,9 @@ const VPApprovalDashboard: React.FC = () => {
     fetchRequests();
   }, []);
 
-  const handleInitialApproval = async (id: string) => {
+  const handleInitialApproval = async (id: string, signature?: string) => {
     try {
-      const response = await clearanceService.approveInitialRequest(id);
+      const response = await clearanceService.approveInitialRequest(id, signature);
       if (response.success) {
         toastUtils.success('Request approved successfully.');
         setRequests(requests.filter(req => req._id !== id));
@@ -47,6 +50,17 @@ const VPApprovalDashboard: React.FC = () => {
       }
     } catch (error) {
       toastUtils.error('An error occurred while approving the request.');
+    }
+  };
+
+  const handleSaveSignature = async (signature: string) => {
+    if (signingRequestId) {
+      // Here you would typically send the signature to the backend
+      // For now, we'll just log it and then approve the request
+      console.log('Signature for request', signingRequestId, signature);
+      await handleInitialApproval(signingRequestId, signature);
+      setIsSignatureModalOpen(false);
+      setSigningRequestId(null);
     }
   };
 
@@ -140,11 +154,24 @@ const VPApprovalDashboard: React.FC = () => {
                 >
                   Approve Initial Request
                 </button>
+                <button onClick={() => {
+                    setSigningRequestId(request._id);
+                    setIsSignatureModalOpen(true);
+                  }} className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700">
+                    Sign & Approve
+                  </button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <SignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onSave={handleSaveSignature}
+        title="Sign Clearance Request"
+      />
 
       {/* File Preview Modal */}
       {previewFile && (

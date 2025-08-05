@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 // Generate random string
 const generateRandomString = (length = 32) => {
@@ -105,6 +107,29 @@ const generateUniqueFilename = (originalName) => {
   return `${nameWithoutExt}-${timestamp}-${random}.${extension}`;
 };
 
+// Save base64 image to file
+const saveBase64Image = async (base64String, uploadDir = 'uploads') => {
+  if (!base64String || typeof base64String !== 'string') {
+    throw new Error('Invalid base64 string provided.');
+  }
+
+  // Extract the image format and the base64 data
+  const matches = base64String.match(/^data:image\/([a-zA-Z0-9]+);base64,(.*)$/);
+  if (!matches || matches.length !== 3) {
+    throw new Error('Invalid base64 image format.');
+  }
+
+  const imageFormat = matches[1];
+  const base64Data = matches[2];
+  const buffer = Buffer.from(base64Data, 'base64');
+
+  const filename = `signature-${Date.now()}.${imageFormat}`;
+  const filePath = path.join(uploadDir, filename);
+
+  await fs.promises.writeFile(filePath, buffer);
+  return filePath;
+};
+
 module.exports = {
   generateRandomString,
   generateSlug,
@@ -120,4 +145,5 @@ module.exports = {
   getFileExtension,
   isAllowedFileType,
   generateUniqueFilename,
+  saveBase64Image,
 };

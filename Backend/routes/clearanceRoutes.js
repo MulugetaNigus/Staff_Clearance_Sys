@@ -14,6 +14,7 @@ const {
   getMyReviewSteps,
   hrReviewRequest,
   getHRPendingRequests,
+  hideClearanceStep,
 } = require('../controllers/clearanceController');
 
 // New route for reviewers to get their assigned steps
@@ -30,5 +31,6 @@ router.route('/:id/reject-initial').put(protect, authorize('AcademicVicePresiden
 router.route('/requests/:id/approve-final').put(protect, authorize('AcademicVicePresident'), approveFinalRequest);
 router.route('/requests/:id').get(protect, getClearanceRequestById);
 router.route('/steps/:id').put(protect, updateClearanceStep);
+router.route('/steps/:id/hide').put(protect, hideClearanceStep);
 
 module.exports = router;

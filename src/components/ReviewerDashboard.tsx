@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import SignatureModal from './SignatureModal';
 import { useAuth } from '../context/AuthContext';
 import { clearanceService } from '../services/clearanceService';
 import { toastUtils } from '../utils/toastUtils';
 import type { ClearanceRequest, ClearanceStep } from '../types/clearance';
-import { FaFilePdf, FaFileImage, FaDownload, FaEye, FaTimes } from 'react-icons/fa';
+import { FaFilePdf, FaFileImage, FaDownload, FaEye, FaTimes, FaTrash } from 'react-icons/fa';
 
 const API_BASE_URL = 'http://localhost:5000';
 
@@ -20,6 +21,8 @@ const ReviewerDashboard: React.FC = () => {
   const [commentingStepId, setCommentingStepId] = useState<string | null>(null);
   const [comment, setComment] = useState('');
   const [previewFile, setPreviewFile] = useState<string | null>(null);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [signingStepId, setSigningStepId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMySteps = async () => {
@@ -38,8 +41,8 @@ const ReviewerDashboard: React.FC = () => {
     fetchMySteps();
   }, []);
 
-  const handleUpdateStep = async (stepId: string, status: 'cleared' | 'issue') => {
-    const step = steps.find((s) => s.id === stepId);
+  const handleUpdateStep = async (stepId: string, status: 'cleared' | 'issue' | 'pending', signature?: string) => {
+    const step = steps.find((s) => s._id === stepId);
     if (step?.requestId.status === 'pending_approval') {
       toastUtils.info('This request is still awaiting VP approval.');
       return;
@@ -51,10 +54,10 @@ const ReviewerDashboard: React.FC = () => {
     }
 
     try {
-      const response = await clearanceService.updateClearanceStep(stepId, { status, comment });
+      const response = await clearanceService.updateClearanceStep(stepId, { status, comment, signature });
       if (response.success) {
         toastUtils.success(`Step successfully updated to ${status}.`);
-        setSteps(steps.map(s => s.id === stepId ? { ...s, status: status, comment: comment } : s));
+        setSteps(steps.map(s => s._id === stepId ? { ...s, status: status, comment: comment } : s));
         setCommentingStepId(null);
         setComment('');
       } else {
@@ -62,6 +65,30 @@ const ReviewerDashboard: React.FC = () => {
       }
     } catch (error) {
       toastUtils.error('An error occurred while updating the step.');
+    }
+  };
+
+  const handleSaveSignature = async (signature: string) => {
+    if (signingStepId) {
+      await handleUpdateStep(signingStepId, 'cleared', signature);
+      setIsSignatureModalOpen(false);
+      setSigningStepId(null);
+    }
+  };
+
+  const handleHideStep = async (stepId: string) => {
+    if (window.confirm('Are you sure you want to hide this step from your view?')) {
+      try {
+        const response = await clearanceService.hideClearanceStep(stepId);
+        if (response.success) {
+          toastUtils.success('Step successfully hidden.');
+          setSteps(steps.filter(s => s._id !== stepId));
+        } else {
+          toastUtils.error(response.message || 'Failed to hide step.');
+        }
+      } catch (error) {
+        toastUtils.error('An error occurred while hiding the step.');
+      }
     }
   };
 
@@ -85,7 +112,7 @@ const ReviewerDashboard: React.FC = () => {
       ) : (
         <div className="space-y-8">
           {steps.map((step) => (
-            <div key={step.id} className="bg-white rounded-3xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
+            <div key={step._id} className="bg-white rounded-3xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
               <div className="p-7 flex-grow">
                 <div className="grid md:grid-cols-3 gap-6">
                   {/* Request Info */}
@@ -145,38 +172,71 @@ const ReviewerDashboard: React.FC = () => {
               </div>
 
               {/* Actions */}
-              {commentingStepId === step.id ? (
-                <div className="p-7 bg-gray-50 border-t border-gray-100">
-                  <textarea
-                    placeholder="Provide a clear reason for the issue..."
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    className="w-full p-4 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800 text-sm"
-                    rows={4}
-                  />
-                  <div className="flex justify-end space-x-4 mt-4">
-                    <button onClick={() => setCommentingStepId(null)} className="px-6 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-100">
-                      Cancel
+              <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end items-center space-x-4">
+                {step.status === 'cleared' ? (
+                  <div className="flex items-center space-x-4">
+                    <button onClick={() => handleUpdateStep(step._id, 'pending')} className="px-6 py-2 text-sm font-medium bg-yellow-500 text-white rounded-xl hover:bg-yellow-600">
+                      Unclear
                     </button>
-                    <button onClick={() => handleUpdateStep(step.id, 'issue')} disabled={!comment.trim()} className="px-6 py-2 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50">
-                      Flag Issue
+                    <button onClick={() => handleHideStep(step._id)} className="p-2 text-gray-500 hover:text-red-600">
+                      <FaTrash />
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end space-x-4">
-                  <button onClick={() => setCommentingStepId(step.id)} className="px-6 py-2 text-sm font-medium border border-red-300 text-red-700 rounded-xl hover:bg-red-50">
-                    Flag Issue
-                  </button>
-                  <button onClick={() => handleUpdateStep(step.id, 'cleared')} className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700">
-                    Clear
-                  </button>
-                </div>
-              )}
+                ) : step.status === 'issue' ? (
+                  <div className="flex items-center space-x-4">
+                    <button onClick={() => handleUpdateStep(step._id, 'pending')} className="px-6 py-2 text-sm font-medium bg-yellow-500 text-white rounded-xl hover:bg-yellow-600">
+                      Unflag
+                    </button>
+                    <button onClick={() => handleHideStep(step._id)} className="p-2 text-gray-500 hover:text-red-600">
+                      <FaTrash />
+                    </button>
+                  </div>
+                ) : commentingStepId === step._id ? (
+                  <div className="w-full">
+                    <textarea
+                      placeholder="Provide a clear reason for the issue..."
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      className="w-full p-4 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800 text-sm"
+                      rows={4}
+                    />
+                    <div className="flex justify-end space-x-4 mt-4">
+                      <button onClick={() => setCommentingStepId(null)} className="px-6 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-100">
+                        Cancel
+                      </button>
+                      <button onClick={() => handleUpdateStep(step._id, 'issue')} disabled={!comment.trim()} className="px-6 py-2 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50">
+                        Flag Issue
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <button onClick={() => setCommentingStepId(step._id)} className="px-6 py-2 text-sm font-medium border border-red-300 text-red-700 rounded-xl hover:bg-red-50">
+                      Flag Issue
+                    </button>
+                    <button onClick={() => handleUpdateStep(step._id, 'cleared')} className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700">
+                      Clear
+                    </button>
+                    <button onClick={() => {
+                      setSigningStepId(step._id);
+                      setIsSignatureModalOpen(true);
+                    }} className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700">
+                      Sign & Clear
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      <SignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onSave={handleSaveSignature}
+        title="Sign & Clear Step"
+      />
 
       {/* File Preview Modal */}
       {previewFile && (

@@ -46,6 +46,13 @@ const clearanceStepSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    signature: {
+      type: String,
+    },
+    hiddenFor: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
   },
   {
     timestamps: true,

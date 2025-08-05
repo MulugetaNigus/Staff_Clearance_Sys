@@ -47,6 +47,12 @@ const clearanceRequestSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    hrSignature: {
+      type: String,
+    },
+    vpSignature: {
+      type: String,
+    },
     // Submitted form data
     formData: {
       type: mongoose.Schema.Types.Mixed,

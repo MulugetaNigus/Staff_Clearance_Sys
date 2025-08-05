@@ -10,8 +10,8 @@ export const clearanceService = {
     return response.data;
   },
 
-  approveInitialRequest: async (id: string) => {
-    const response = await API.put(`/clearance/requests/${id}/approve-initial`);
+  approveInitialRequest: async (id: string, signature?: string) => {
+    const response = await API.put(`/clearance/requests/${id}/approve-initial`, { signature });
     return response.data;
   },
 
@@ -20,7 +20,7 @@ export const clearanceService = {
     return response.data;
   },
 
-  updateClearanceStep: async (stepId: string, data: { status: 'cleared' | 'issue' | 'pending'; comment?: string }) => {
+  updateClearanceStep: async (stepId: string, data: { status: 'cleared' | 'issue' | 'pending'; comment?: string; signature?: string }) => {
     const response = await API.put(`/clearance/steps/${stepId}`, data);
     return response.data;
   },
@@ -55,8 +55,13 @@ export const clearanceService = {
     return response.data;
   },
 
-  hrReviewRequest: async (id: string, action: 'approve' | 'reject', rejectionReason?: string) => {
-    const response = await API.put(`/clearance/requests/${id}/hr-review`, { action, rejectionReason });
+  hrReviewRequest: async (id: string, action: 'approve' | 'reject', rejectionReason?: string, signature?: string) => {
+    const response = await API.put(`/clearance/requests/${id}/hr-review`, { action, rejectionReason, signature });
+    return response.data;
+  },
+
+  hideClearanceStep: async (stepId: string) => {
+    const response = await API.put(`/clearance/steps/${stepId}/hide`);
     return response.data;
   },
 };
