@@ -1,6 +1,7 @@
 const ClearanceRequest = require('../models/ClearanceRequest');
 const ClearanceStep = require('../models/ClearanceStep');
 const ActivityLog = require('../models/ActivityLog');
+const User = require('../models/User');
 const { asyncHandler } = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const { saveBase64Image } = require('../utils/helpers');
@@ -136,7 +137,8 @@ const hrReviewRequest = asyncHandler(async (req, res, next) => {
       console.log('hrReviewRequest: Action: Approve');
       request.status = 'pending_vp_approval';
       if (signature) {
-        const signaturePath = await saveBase64Image(signature, 'uploads');
+        const hrDepartment = CLEARANCE_DEPARTMENTS.find(d => d.reviewerRole === 'HRDevelopmentReviewer');
+        const signaturePath = await saveBase64Image(signature, 'uploads', hrDepartment.name);
         request.hrSignature = signaturePath;
       }
       await ActivityLog.create({
@@ -206,7 +208,8 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
 
   request.status = 'in_progress';
   if (signature) {
-    const signaturePath = await saveBase64Image(signature, 'uploads');
+    const vpDepartment = CLEARANCE_DEPARTMENTS.find(d => d.reviewerRole === 'AcademicVicePresident');
+    const signaturePath = await saveBase64Image(signature, 'uploads', vpDepartment.name);
     request.vpSignature = signaturePath;
   }
   await request.save();
@@ -220,7 +223,41 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
 
   await ClearanceStep.insertMany(clearanceSteps);
 
-  
+  // Find the HR user to associate with the HR step
+  const hrUser = await User.findOne({ role: 'HRDevelopmentReviewer' });
+
+  // Mark HR and VP steps as 'cleared'
+  await ClearanceStep.updateMany(
+    {
+      requestId: request._id,
+      reviewerRole: { $in: ['HRDevelopmentReviewer', 'AcademicVicePresident'] },
+    },
+    {
+      $set: {
+        status: 'cleared',
+        reviewedBy: req.user._id, // Default to VP, overwrite for HR
+        signature: request.vpSignature, // Default to VP signature
+        lastUpdatedAt: new Date(),
+      },
+    }
+  );
+
+  // Specifically update the HR step with HR's signature and user
+  if (hrUser) {
+    await ClearanceStep.updateOne(
+      {
+        requestId: request._id,
+        reviewerRole: 'HRDevelopmentReviewer',
+      },
+      {
+        $set: {
+          reviewedBy: hrUser._id,
+          signature: request.hrSignature,
+        },
+      }
+    );
+  }
+
 
   await ActivityLog.create({
     userId: req.user._id,
@@ -303,7 +340,7 @@ const updateClearanceStep = asyncHandler(async (req, res, next) => {
   step.lastUpdatedAt = new Date();
 
   if (signature) {
-    const signaturePath = await saveBase64Image(signature, 'uploads');
+    const signaturePath = await saveBase64Image(signature, 'uploads', step.department);
     step.signature = signaturePath;
   }
 

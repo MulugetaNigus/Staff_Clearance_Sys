@@ -141,7 +141,11 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
     doc.text(new Date(step.updatedAt).toLocaleDateString(), colPositions[3] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
 
     const signatureKey = step.department.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (signatures[signatureKey] && signatures[signatureKey].startsWith('data:image')) {
+    if (step.signature) {
+      const signaturePath = `/Backend/${step.signature}`;
+      // Add signature image
+      doc.addImage(signaturePath, 'PNG', colPositions[4] + 2, yPos + 1, 20, 6); // Adjust size and position as needed
+    } else if (signatures[signatureKey] && signatures[signatureKey].startsWith('data:image')) {
       // Add signature image
       const imgData = signatures[signatureKey];
       const imgType = imgData.split(';')[0].split('/')[1].toUpperCase(); // Extract image type (PNG, JPEG)

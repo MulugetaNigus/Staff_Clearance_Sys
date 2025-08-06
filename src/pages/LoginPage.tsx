@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { generateClearanceCertificate } from '../utils/pdfGenerator';
 import { CLEARANCE_DEPARTMENTS } from '../types/departments';
+import { clearanceService } from '../services/clearanceService';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -16,17 +17,21 @@ const LoginPage: React.FC = () => {
 
   useEffect(() => {
     const loadSignatures = async () => {
-      const signaturesToLoad = {
-        hr: '/Backend/uploads/signature-1754395625424.png',
-        vp: '/Backend/uploads/signature-1754398844024.png',
-      };
+      const signaturesToLoad: { [key: string]: string } = {};
+      CLEARANCE_DEPARTMENTS.forEach(dept => {
+        const key = dept.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        // This assumes a naming convention for signature files, e.g., signature-academicdepartmenthead.png
+        // The backend should save signatures with these standardized names.
+        signaturesToLoad[key] = `/Backend/uploads/signature-${key}.png`;
+      });
 
       const newSignatures: { [key: string]: string } = {};
       for (const [key, path] of Object.entries(signaturesToLoad)) {
         try {
           const response = await fetch(path);
           if (!response.ok) {
-            throw new Error(`Failed to load image from ${path}`);
+            console.warn(`Signature for ${key} not found at ${path}`);
+            continue;
           }
           const blob = await response.blob();
           const reader = new FileReader();
@@ -37,7 +42,6 @@ const LoginPage: React.FC = () => {
           reader.readAsDataURL(blob);
         } catch (error) {
           console.error(`Error loading signature ${key} from ${path}:`, error);
-          // Optionally set a placeholder or handle error visually
         }
       }
     };
@@ -96,14 +100,7 @@ const LoginPage: React.FC = () => {
     const sampleSignatures: { [key: string]: string } = {};
     CLEARANCE_DEPARTMENTS.forEach(dept => {
       const key = dept.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-      // Assign specific sample signatures for HR and VP, generic for others
-      if (dept.name === 'HR Competency and Development Team Leader') {
-        sampleSignatures[key] = loadedSignatures.hr || '[sample_signature_placeholder]'; // Use loaded HR signature
-      } else if (dept.name === 'Vice President for Academic, Research & Community Engagement') {
-        sampleSignatures[key] = loadedSignatures.vp || '[sample_signature_placeholder]'; // Use loaded VP signature
-      } else {
-        sampleSignatures[key] = '[sample_signature_placeholder]'; // Generic placeholder
-      }
+      sampleSignatures[key] = loadedSignatures[key] || '[sample_signature_placeholder]';
     });
 
     try {
@@ -113,6 +110,64 @@ const LoginPage: React.FC = () => {
     } catch (error) {
       console.error('Error generating sample PDF:', error);
       toastUtils.error('Failed to generate sample PDF.');
+    }
+  };
+
+  
+
+  const handleDownloadRealPdf = async () => {
+    const referenceCode = prompt('Enter the reference code for the clearance request:');
+    if (!referenceCode) {
+      toastUtils.error('Reference code is required.');
+      return;
+    }
+
+    const loadingToast = toastUtils.loading('Fetching clearance request...');
+    try {
+      const realRequest = await clearanceService.getClearanceRequestByReferenceCode(referenceCode);
+      toastUtils.dismiss(loadingToast);
+
+      if (!realRequest) {
+        toastUtils.error('Clearance request not found.');
+        return;
+      }
+
+      const realSignatures: { [key: string]: string } = {};
+      for (const step of realRequest.steps) {
+        if (step.status === 'cleared' && step.signature) {
+          try {
+            const response = await fetch(`/Backend/${step.signature}`);
+            if (response.ok) {
+              const blob = await response.blob();
+              const reader = new FileReader();
+              await new Promise((resolve) => {
+                reader.onloadend = () => {
+                  realSignatures[step.department.toLowerCase().replace(/[^a-z0-9]/g, '')] = reader.result as string;
+                  resolve(null);
+                };
+                reader.readAsDataURL(blob);
+              });
+            }
+          } catch (error) {
+            console.error(`Error loading signature for ${step.department}:`, error);
+          }
+        }
+      }
+
+      CLEARANCE_DEPARTMENTS.forEach(dept => {
+        const key = dept.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (!realSignatures[key]) {
+          realSignatures[key] = loadedSignatures[key] || '[signature_not_loaded]';
+        }
+      });
+
+      const pdfDoc = await generateClearanceCertificate(realRequest, realSignatures);
+      pdfDoc.save(`cleared_certificate_${referenceCode}.pdf`);
+      toastUtils.success('Real PDF downloaded successfully!');
+    } catch (error) {
+      toastUtils.dismiss(loadingToast);
+      console.error('Error generating real PDF:', error);
+      toastUtils.error('Failed to generate real PDF. Make sure the reference code is correct and the request is cleared.');
     }
   };
 
@@ -211,6 +266,12 @@ const LoginPage: React.FC = () => {
             >
               Download Sample Cleared PDF
             </button>
+            {/* <button
+              onClick={handleDownloadRealPdf}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-lg font-semibold text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 ease-in-out mt-4"
+            >
+              Download Real Cleared PDF (for testing)
+            </button> */}
           </div>
         </div>
       </div>

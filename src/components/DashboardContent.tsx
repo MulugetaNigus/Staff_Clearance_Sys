@@ -50,7 +50,7 @@ const QuickActions: React.FC<{ role: string; setActiveTab: (tab: string) => void
         { title: 'Start Clearance', icon: '🚀', action: () => setActiveTab('clearance'), color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
         { title: 'Track Progress', icon: '📊', action: () => setActiveTab('track-clearance'), color: 'bg-gradient-to-r from-green-500 to-green-600' },
         { title: 'Update Profile', icon: '📝', action: () => setActiveTab('profile'), color: 'bg-gradient-to-r from-purple-500 to-purple-600' },
-        { title: 'Download Certificate', icon: '📋', action: () => { }, color: 'bg-gradient-to-r from-orange-500 to-orange-600' },
+        { title: 'Download Certificate', icon: '📋', action: () => setActiveTab('download-certificate'), color: 'bg-gradient-to-r from-orange-500 to-orange-600' },
       ];
     }
   };

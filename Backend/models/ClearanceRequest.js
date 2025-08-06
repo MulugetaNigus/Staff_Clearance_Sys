@@ -15,7 +15,7 @@ const clearanceRequestSchema = new mongoose.Schema(
     purpose: {
       type: String,
       required: [true, 'Purpose of clearance is required'],
-      enum: ['Resignation', 'Retirement', 'Transfer', 'Leave'],
+      enum: ['Resignation', 'Retirement', 'Transfer', 'Leave', 'End of Contract'],
     },
     status: {
       type: String,

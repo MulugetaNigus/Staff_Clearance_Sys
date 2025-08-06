@@ -108,12 +108,11 @@ const generateUniqueFilename = (originalName) => {
 };
 
 // Save base64 image to file
-const saveBase64Image = async (base64String, uploadDir = 'uploads') => {
+const saveBase64Image = async (base64String, uploadDir = 'uploads', departmentName = null) => {
   if (!base64String || typeof base64String !== 'string') {
     throw new Error('Invalid base64 string provided.');
   }
 
-  // Extract the image format and the base64 data
   const matches = base64String.match(/^data:image\/([a-zA-Z0-9]+);base64,(.*)$/);
   if (!matches || matches.length !== 3) {
     throw new Error('Invalid base64 image format.');
@@ -123,11 +122,18 @@ const saveBase64Image = async (base64String, uploadDir = 'uploads') => {
   const base64Data = matches[2];
   const buffer = Buffer.from(base64Data, 'base64');
 
-  const filename = `signature-${Date.now()}.${imageFormat}`;
+  let filename;
+  if (departmentName) {
+    const departmentKey = departmentName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    filename = `signature-${departmentKey}.${imageFormat}`;
+  } else {
+    filename = `signature-${Date.now()}.${imageFormat}`;
+  }
+
   const filePath = path.join(uploadDir, filename);
 
   await fs.promises.writeFile(filePath, buffer);
-  return filePath;
+  return filePath.replace(/\\/g, '/');
 };
 
 module.exports = {
