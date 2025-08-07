@@ -174,6 +174,16 @@ const DashboardOverview: React.FC<{ setActiveTab: (tab: string) => void }> = ({ 
   );
 };
 
+const GenericContent: React.FC<{ title: string; icon: string }> = ({ title, icon }) => (
+  <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+    <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+      <span className="text-3xl mr-4">{icon}</span>
+      {title}
+    </h2>
+    <p className="text-gray-500 mt-4">This section is under construction. Please check back later.</p>
+  </div>
+);
+
 const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiveTab }) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);

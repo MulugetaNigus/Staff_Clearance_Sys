@@ -66,24 +66,25 @@ const ForceChangePassword: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Old Password */}
-            <div>
-              <label htmlFor="oldPassword" className="block text-sm font-medium text-gray-700 mb-2">Old Password</label>
-              <div className="relative">
-                <input
-                  id="oldPassword"
-                  type={showOldPassword ? 'text' : 'password'}
-                  required
-                  value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-100 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-shadow"
-                  placeholder="Enter your old password"
-                />
-                <button type="button" onClick={() => setShowOldPassword(!showOldPassword)} className="absolute inset-y-0 right-0 px-4 flex items-center text-gray-500 hover:text-gray-700">
-                  {showOldPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
+            {!resetToken && (
+              <div>
+                <label htmlFor="oldPassword" className="block text-sm font-medium text-gray-700 mb-2">Old Password</label>
+                <div className="relative">
+                  <input
+                    id="oldPassword"
+                    type={showOldPassword ? 'text' : 'password'}
+                    required
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-100 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-shadow"
+                    placeholder="Enter your old password"
+                  />
+                  <button type="button" onClick={() => setShowOldPassword(!showOldPassword)} className="absolute inset-y-0 right-0 px-4 flex items-center text-gray-500 hover:text-gray-700">
+                    {showOldPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* New Password */}
             <div>

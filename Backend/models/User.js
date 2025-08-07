@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 // User roles based on frontend UserRole type
 const USER_ROLES = [
@@ -199,6 +200,23 @@ userSchema.methods.resetLoginAttempts = function() {
   return this.updateOne({
     $unset: { loginAttempts: 1, lockUntil: 1 }
   });
+};
+
+// Generate and hash password reset token
+userSchema.methods.getResetPasswordToken = function() {
+  // Generate token
+  const resetToken = crypto.randomBytes(20).toString('hex');
+
+  // Hash token and set to resetPasswordToken field
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  // Set expire
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  return resetToken;
 };
 
 // Generate username from name

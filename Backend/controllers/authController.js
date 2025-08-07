@@ -155,10 +155,82 @@ const logout = asyncHandler(async (req, res) => {
   });
 });
 
+const crypto = require('crypto');
+
+// @desc    Forgot Password
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = asyncHandler(async (req, res, next) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return next(new AppError('Please provide an email address', 400));
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return next(new AppError('There is no account with that email address.', 404));
+  }
+
+  // Generate reset token
+  const resetToken = user.getResetPasswordToken();
+  await user.save({ validateBeforeSave: false }); // Save user with new reset token
+  console.log('User after saving token:', user.passwordResetToken, user.passwordResetExpires);
+
+  // Create reset URL
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+  res.status(200).json({
+    success: true,
+    message: 'Password reset link generated successfully',
+    resetUrl, // Send the reset URL back to the frontend
+  });
+});
+
+// @desc    Reset Password
+// @route   PUT /api/auth/reset-password/:resettoken
+// @access  Public
+const resetPassword = asyncHandler(async (req, res, next) => {
+  // Get hashed token
+  const resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(req.params.resettoken)
+    .digest('hex');
+
+  console.log('Received resettoken:', req.params.resettoken);
+  console.log('Hashed resetPasswordToken:', resetPasswordToken);
+
+  const user = await User.findOne({
+    passwordResetToken: resetPasswordToken,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    console.log('User not found or token invalid/expired.');
+    return next(new AppError('Invalid or expired token', 400));
+  }
+  console.log('User found for reset:', user.email);
+
+  // Set new password
+  user.password = req.body.password;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  user.mustChangePassword = false;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Password reset successful',
+  });
+});
+
 module.exports = {
   register,
   login,
   changePassword,
   getMe,
   logout,
+  forgotPassword,
+  resetPassword,
 };

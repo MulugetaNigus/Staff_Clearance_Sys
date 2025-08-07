@@ -136,4 +136,23 @@ export const userService = {
     }
   },
 
+  forgotPassword: async (email: string): Promise<{ success: boolean; message?: string; resetUrl?: string; }> => {
+    try {
+      const response = await API.post('/auth/forgot-password', { email });
+      return { ...response.data, success: true };
+    } catch (error: any) {
+      console.error('Forgot password request failed:', error);
+      return { success: false, message: error.response?.data?.message || 'An error occurred' };
+    }
+  },
+
+  resetPassword: async (token: string, password: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await API.put(`/auth/reset-password/${token}`, { password });
+      return { ...response.data, success: true };
+    } catch (error: any) {
+      console.error('Reset password request failed:', error);
+      return { success: false, message: error.response?.data?.message || 'An error occurred' };
+    }
+  },
 };

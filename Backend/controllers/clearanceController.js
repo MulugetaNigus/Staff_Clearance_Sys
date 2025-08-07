@@ -599,6 +599,27 @@ const hideClearanceStep = asyncHandler(async (req, res, next) => {
   });
 });
 
+const verifyClearanceRequest = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const request = await ClearanceRequest.findById(id).populate('initiatedBy', 'name department');
+
+  if (!request) {
+    return next(new AppError('Clearance request not found', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      referenceCode: request.referenceCode,
+      status: request.status,
+      initiatedBy: request.initiatedBy,
+      purpose: request.purpose,
+      createdAt: request.createdAt,
+      updatedAt: request.updatedAt,
+    },
+  });
+});
+
 module.exports = {
   createClearanceRequest,
   hrReviewRequest,
@@ -612,6 +633,7 @@ module.exports = {
   getMyReviewSteps,
   getHRPendingRequests,
   hideClearanceStep,
+  verifyClearanceRequest,
 };
 
 // 07 77 676744  

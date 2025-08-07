@@ -5,6 +5,10 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import ForceChangePassword from './components/ForceChangePassword';
+
+import VerificationPage from './pages/VerificationPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import { Toaster } from 'react-hot-toast';
 
 const App: React.FC = () => {
@@ -14,7 +18,11 @@ const App: React.FC = () => {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/force-change-password" element={<ForceChangePassword />} />
+          
+          <Route path="/verify/:referenceCode" element={<VerificationPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/force-change-password" element={<ForceChangePassword />} /> 
+          <Route path="/reset-password/:resettoken" element={<ResetPasswordPage />} />
           <Route 
             path="/dashboard"
             element={

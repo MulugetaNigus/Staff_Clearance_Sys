@@ -125,13 +125,11 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
             type="text"
             id="department"
             name="department"
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={user?.department || ''}
+            readOnly
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
             placeholder="e.g., Computer Science, Physics"
           />
-          {error && !department && <p className="text-red-500 text-sm mt-1">{error}</p>}
         </div>
 
         <div>

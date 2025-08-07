@@ -1,4 +1,5 @@
 import API from './api';
+import axios from 'axios';
 
 export const clearanceService = {
   createClearanceRequest: async (data: FormData) => {
@@ -62,6 +63,11 @@ export const clearanceService = {
 
   hideClearanceStep: async (stepId: string) => {
     const response = await API.put(`/clearance/steps/${stepId}/hide`);
+    return response.data;
+  },
+
+  verifyClearanceRequest: async (id: string) => {
+    const response = await axios.get(`http://localhost:5000/verify/${id}`);
     return response.data;
   },
 };

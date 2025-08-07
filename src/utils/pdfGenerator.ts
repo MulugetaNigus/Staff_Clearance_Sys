@@ -170,7 +170,7 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
   doc.setTextColor(100, 100, 100); // Gray text
 
   // QR Code
-  const qrCodeDataUrl = await generateQrCode(`https://your-university.edu/verify/${request.referenceCode}`);
+  const qrCodeDataUrl = await generateQrCode(`${window.location.origin}/verify/${request._id}`);
   if (qrCodeDataUrl) {
     doc.addImage(qrCodeDataUrl, 'PNG', margin, pageHeight - margin - 60, 35, 35); // Adjusted position to be higher
     doc.text('Scan to Verify', margin + (35 / 2), pageHeight - margin - 25, { align: 'center' }); // Adjusted position to be below QR code

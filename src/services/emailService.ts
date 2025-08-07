@@ -14,7 +14,7 @@ export const emailTemplates = {
     subject: 'Your New Account - Woldia University TCS',
   },
   PASSWORD_RESET: {
-    templateId: 'template_password_reset',
+    templateId: "template_ki4x62g",
     subject: 'Password Reset - Woldia University TCS',
   },
   ACCOUNT_ACTIVATION: {
@@ -86,32 +86,33 @@ export const emailService = {
   sendPasswordResetEmail: async (userDetails: {
     to_email: string;
     to_name: string;
-    new_password: string;
+    reset_link: string;
   }) => {
     try {
       const templateParams = {
         to_email: userDetails.to_email,
         to_name: userDetails.to_name,
+        recipient_email: userDetails.to_email, // Added for redundancy, in case template expects this
         subject: emailTemplates.PASSWORD_RESET.subject,
-        new_password: userDetails.new_password,
-        login_url: `${window.location.origin}/login`,
+        reset_link: userDetails.reset_link,
         system_name: 'Woldia University Teacher Clearance System',
         admin_email: 'admin@woldia.edu',
         message: `
-          Your password has been reset by the System Administrator.
+          You are receiving this email because you (or someone else) has requested a password reset for your account.
           
-          Your new password: ${userDetails.new_password}
+          Please click on the following link to reset your password:
           
-          Please log in using the link above and change your password after your first login.
+          ${userDetails.reset_link}
           
-          If you didn't request this change, please contact the System Administrator immediately.
+          If you did not request this, please ignore this email and your password will remain unchanged.
         `,
       };
 
       const response = await emailjs.send(
         EMAILJS_CONFIG.SERVICE_ID,
         emailTemplates.PASSWORD_RESET.templateId,
-        templateParams
+        templateParams,
+        EMAILJS_CONFIG.PUBLIC_KEY
       );
 
       console.log('Password reset email sent successfully:', response);
