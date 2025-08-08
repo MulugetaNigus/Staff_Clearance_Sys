@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import { toastUtils } from '../utils/toastUtils';
+import API from '../services/api';
 
 // Types moved from src/types/auth.ts
 export interface User {
@@ -60,7 +61,7 @@ export interface LoginCredentials {
 }
 
 interface AuthContextType extends AuthState {
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<{ mustChangePassword: boolean }>;
   logout: () => void;
 }
 
@@ -112,9 +113,76 @@ const initialState: AuthState = {
 
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, initialState);
+  // Initialize synchronously from localStorage to avoid redirect flicker on refresh
+  const [state, dispatch] = useReducer(
+    authReducer,
+    initialState,
+    (init): AuthState => {
+      try {
+        const token = localStorage.getItem('authToken');
+        const cachedUser = localStorage.getItem('user');
+        if (token && cachedUser) {
+          const parsedUser = JSON.parse(cachedUser);
+          return { user: parsedUser, isAuthenticated: true, isLoading: false };
+        }
+        if (token) {
+          // We have a token but no cached user; show loading until /auth/me resolves
+          return { user: null, isAuthenticated: false, isLoading: true };
+        }
+      } catch {
+        // ignore parse errors
+      }
+      return init;
+    }
+  );
 
-  const login = async (credentials: LoginCredentials): Promise<void> => {
+  // Bootstrap session on app load
+  useEffect(() => {
+    const initializeSession = async () => {
+      const token = localStorage.getItem('authToken');
+      const cachedUser = localStorage.getItem('user');
+
+      // Optimistically set cached user while verifying token
+      if (cachedUser) {
+        try {
+          const parsed = JSON.parse(cachedUser);
+          dispatch({ type: 'LOGIN_SUCCESS', payload: parsed });
+        } catch {
+          // ignore parse errors
+        }
+      } else if (token) {
+        dispatch({ type: 'LOGIN_START' });
+      }
+
+      if (!token) {
+        // no session to restore
+        return;
+      }
+
+      try {
+        const response = await API.get('/auth/me');
+        const user = response.data?.data?.user;
+        if (user) {
+          localStorage.setItem('user', JSON.stringify(user));
+          dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+        } else {
+          // invalid structure → clear session
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          dispatch({ type: 'LOGOUT' });
+        }
+      } catch {
+        // token invalid/expired
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        dispatch({ type: 'LOGOUT' });
+      }
+    };
+
+    initializeSession();
+  }, []);
+
+  const login = async (credentials: LoginCredentials): Promise<{ mustChangePassword: boolean }> => {
     dispatch({ type: 'LOGIN_START' });
 
     try {
@@ -138,6 +206,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (data.success && data.data && data.data.user) {
         // Store token in localStorage for future requests
         localStorage.setItem('authToken', data.data.token);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
         
         dispatch({ type: 'LOGIN_SUCCESS', payload: data.data.user });
         return { mustChangePassword: data.data.user.mustChangePassword };
@@ -153,6 +222,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     // Remove token from localStorage
     localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
     
     dispatch({ type: 'LOGOUT' });
     toastUtils.auth.logoutSuccess();

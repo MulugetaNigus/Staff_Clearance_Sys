@@ -26,11 +26,19 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
+    const status = error.response?.status;
+    const url: string | undefined = error.config?.url;
+
+    if (status === 401) {
+      // Allow the auth bootstrap to handle 401 from /auth/me without a hard redirect
+      if (url && url.includes('/auth/me')) {
+        return Promise.reject(error);
+      }
+
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
       window.location.href = '/login';
+      return; // stop further processing
     }
     return Promise.reject(error);
   }
