@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import API from '../services/api';
 import { toastUtils } from '../utils/toastUtils';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { useParams } from 'react-router-dom';
 
 const ForceChangePassword: React.FC = () => {
   const { user } = useAuth();
@@ -14,6 +15,8 @@ const ForceChangePassword: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const { resetToken } = useParams<{ resetToken: string }>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

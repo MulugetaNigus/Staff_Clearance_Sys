@@ -20,7 +20,7 @@ const clearanceStepSchema = new mongoose.Schema(
     status: {
       type: String,
       required: [true, 'Status is required'],
-      enum: ['pending', 'cleared', 'issue'],
+      enum: ['pending', 'available', 'cleared', 'issue', 'blocked'],
       default: 'pending',
     },
     comment: {
@@ -53,6 +53,39 @@ const clearanceStepSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }],
+    // New fields for enhanced workflow
+    stage: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+    isSequential: {
+      type: Boolean,
+      default: false,
+    },
+    dependsOn: [{
+      type: Number, // Order numbers this step depends on
+    }],
+    isInterdependent: {
+      type: Boolean,
+      default: false,
+    },
+    interdependentWith: [{
+      type: String, // Reviewer roles that this step is interdependent with
+    }],
+    vpSignatureType: {
+      type: String,
+      enum: ['initial', 'final'],
+    },
+    // Track if this step can be processed (dependencies met)
+    canProcess: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

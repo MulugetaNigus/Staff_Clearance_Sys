@@ -20,8 +20,8 @@ const clearanceRequestSchema = new mongoose.Schema(
     status: {
       type: String,
       required: [true, 'Status is required'],
-      enum: ['pending_hr_review', 'pending_vp_approval', 'in_progress', 'cleared', 'rejected'],
-      default: 'pending_hr_review',
+      enum: ['initiated', 'vp_initial_approval', 'in_progress', 'cleared', 'rejected', 'archived'],
+      default: 'initiated',
     },
     supportingDocumentUrl: {
       type: String,
@@ -50,8 +50,20 @@ const clearanceRequestSchema = new mongoose.Schema(
     hrSignature: {
       type: String,
     },
-    vpSignature: {
+    vpInitialSignature: {
       type: String,
+    },
+    vpFinalSignature: {
+      type: String,
+    },
+    vpInitialSignedAt: {
+      type: Date,
+    },
+    vpFinalSignedAt: {
+      type: Date,
+    },
+    archivedAt: {
+      type: Date,
     },
     // Submitted form data
     formData: {

@@ -1,648 +1,764 @@
+const { asyncHandler } = require('../utils/asyncHandler');
 const ClearanceRequest = require('../models/ClearanceRequest');
 const ClearanceStep = require('../models/ClearanceStep');
 const ActivityLog = require('../models/ActivityLog');
-const User = require('../models/User');
-const { asyncHandler } = require('../utils/asyncHandler');
+const { ACADEMIC_STAFF_WORKFLOW } = require('../config/workflow');
 const AppError = require('../utils/AppError');
-const { saveBase64Image } = require('../utils/helpers');
 
-const CLEARANCE_DEPARTMENTS = [
-  { id: '1', name: 'Academic Department Head', reviewerRole: 'AcademicDepartmentReviewer', order: 1 },
-  { id: '2', name: 'Registrar', reviewerRole: 'RegistrarReviewer', order: 2 },
-  { id: '3', name: 'Student Dean', reviewerRole: 'StudentDeanReviewer', order: 3 },
-  { id: '4', name: 'Distance and Continuing Education', reviewerRole: 'DistanceEducationReviewer', order: 4 },
-  { id: '5', name: 'Research Directorate', reviewerRole: 'ResearchDirectorateReviewer', order: 5 },
-  { id: '6', name: 'College Head', reviewerRole: 'CollegeReviewer', order: 6 },
-  { id: '7', name: 'Woldia University Employees Finance Enterprise', reviewerRole: 'EmployeeFinanceReviewer', order: 7 },
-  { id: '8', name: 'Library', reviewerRole: 'LibraryReviewer', order: 8 },
-  { id: '9', name: 'General Service Executive', reviewerRole: 'GeneralServiceReviewer', order: 9 },
-  { id: '10', name: 'Property Executive Director', reviewerRole: 'PropertyDirectorReviewer', order: 10 },
-  { id: '11', name: 'Store 1 Officer', reviewerRole: 'Store1Reviewer', order: 11 },
-  { id: '12', name: 'Store 2 Officer', reviewerRole: 'Store2Reviewer', order: 12 },
-  { id: '13', name: 'Property Registration and Control Specialist 1', reviewerRole: 'PropertySpecialist1Reviewer', order: 13 },
-  { id: '14', name: 'Property Registration and Control Specialist 2', reviewerRole: 'PropertySpecialist2Reviewer', order: 14 },
-  { id: '15', name: 'Internal Audit Executive Director', reviewerRole: 'InternalAuditReviewer', order: 15 },
-  { id: '16', name: 'Finance Executive', reviewerRole: 'FinanceExecutiveReviewer', order: 16 },
-  { id: '17', name: 'Senior Finance Specialist', reviewerRole: 'FinanceSpecialistReviewer', order: 17 },
-  { id: '18', name: 'Treasurer', reviewerRole: 'TreasurerReviewer', order: 18 },
-  { id: '19', name: 'Ethics and Anti-Corruption Monitoring Executive', reviewerRole: 'EthicsReviewer', order: 19 },
-  { id: '20', name: 'ICT Executive', reviewerRole: 'ICTReviewer', order: 20 },
-  { id: '21', name: 'Community Engagement Directorate', reviewerRole: 'CommunityEngagementReviewer', order: 21 },
-  { id: '22', name: 'Competency and HR Management Executive', reviewerRole: 'HRManagementReviewer', order: 22 },
-  { id: '23', name: 'Records and Archives Officer', reviewerRole: 'RecordsArchivesReviewer', order: 23 },
-  { id: '24', name: 'Office and Classroom Facilities Specialist', reviewerRole: 'FacilitiesReviewer', order: 24 },
-  { id: '25', name: 'Case Executive', reviewerRole: 'CaseExecutiveReviewer', order: 25 },
-  { id: '26', name: 'HR Competency and Development Team Leader', reviewerRole: 'HRDevelopmentReviewer', order: 26 },
-  { id: '27', name: 'Vice President for Academic, Research & Community Engagement', reviewerRole: 'AcademicVicePresident', order: 27 },
-];
-
-// @desc    Create a new clearance request
-// @route   POST /api/clearance/requests
-// @access  Private
 const createClearanceRequest = asyncHandler(async (req, res, next) => {
-  const { formData, visibility } = req.body;
-  let parsedFormData;
-  let visibilityData;
+  const { formData } = req.body;
+  const initiatedBy = req.user._id;
 
-  try {
-    parsedFormData = JSON.parse(formData);
-  } catch (e) {
-    return next(new AppError('Invalid formData format.', 400));
+  if (!formData) {
+    return next(new AppError('Form data is required', 400));
   }
 
-  try {
-    visibilityData = visibility ? JSON.parse(visibility) : [];
-  } catch (e) {
-    return next(new AppError('Invalid visibility data format.', 400));
+  const parsedFormData = JSON.parse(formData);
+  console.log('Parsed Form Data:', parsedFormData);
+  const { purpose, teacherId, department, fileMetadata } = parsedFormData;
+
+  if (!purpose || !teacherId || !department) {
+    return next(new AppError('Purpose, teacherId and department are required in formData', 400));
   }
+  const staffId = teacherId;
 
-  const { purpose, ...otherFormData } = parsedFormData;
-  const staffId = req.user.id || req.user._id;
+  // Generate a unique reference code
+  const referenceCode = `CL-${Date.now()}-${staffId}`;
 
-  if (!purpose) {
-    return next(new AppError('Purpose of clearance is required', 400));
-  }
+  const uploadedFiles = req.files?.map(file => {
+    const metadata = fileMetadata?.find(meta => meta.fileName === file.originalname);
+    return {
+      fileName: file.originalname,
+      filePath: file.path,
+      mimetype: file.mimetype,
+      size: file.size,
+      visibility: metadata ? metadata.visibility : 'all',
+    };
+  }) || [];
 
-  const existingRequest = await ClearanceRequest.findOne({
-    initiatedBy: req.user._id,
-    status: { $in: ['pending_hr_review', 'pending_vp_approval', 'in_progress'] },
-  });
-
-  if (existingRequest) {
-    return next(new AppError('You already have a pending clearance request.', 400));
-  }
-
-  const referenceCode = `CL-${Date.now()}`;
-
-  const visibilityMap = new Map(visibilityData.map(item => [item.filename, item.visibility]));
-
-  const uploadedFiles = req.files ? req.files.map(file => ({
-    fileName: file.filename,
-    originalName: file.originalname,
-    filePath: file.path,
-    fileType: file.mimetype,
-    fileSize: file.size,
-    visibility: visibilityMap.get(file.originalname) || 'all',
-  })) : [];
-
-  const clearanceRequest = await ClearanceRequest.create({
+  const newRequest = await ClearanceRequest.create({
     referenceCode,
     staffId,
     purpose,
-    initiatedBy: req.user._id,
-    formData: otherFormData,
+    formData: parsedFormData,
+    initiatedBy,
+    status: 'initiated',
     uploadedFiles,
-    status: 'pending_hr_review',
   });
 
+  // Create clearance steps with enhanced workflow data
+  const steps = ACADEMIC_STAFF_WORKFLOW.flatMap(workflowStep =>
+    workflowStep.roles.map(role => ({
+      requestId: newRequest._id,
+      department: workflowStep.name,
+      reviewerRole: role,
+      order: workflowStep.order,
+      stage: workflowStep.stage,
+      description: workflowStep.description,
+      isSequential: workflowStep.isSequential,
+      dependsOn: workflowStep.dependsOn || [],
+      isInterdependent: workflowStep.isInterdependent || false,
+      interdependentWith: workflowStep.interdependentWith || [],
+      vpSignatureType: workflowStep.vpSignatureType,
+      canProcess: workflowStep.order === 1 ? true : false, // Only first step can be processed initially
+      status: workflowStep.order === 1 ? 'available' : 'pending', // Only first step is available initially
+    }))
+  );
+
+  await ClearanceStep.insertMany(steps);
+
   await ActivityLog.create({
-    userId: req.user._id,
-    requestId: clearanceRequest._id,
+    userId: initiatedBy,
     action: 'REQUEST_CREATED',
-    description: `Clearance request created by ${req.user.name}`,
+    description: `Clearance request created for ${req.user.name} with purpose: ${purpose}`,
   });
 
   res.status(201).json({
     success: true,
-    message: 'Clearance request submitted and pending HR review.',
-    data: clearanceRequest,
+    data: newRequest,
   });
 });
 
-// @desc    HR reviews a clearance request (approve/reject)
-// @route   PUT /api/clearance/requests/:id/hr-review
-// @access  Private (HROfficer)
-const hrReviewRequest = asyncHandler(async (req, res, next) => {
-  console.log('hrReviewRequest: Entering function.');
-  console.log('hrReviewRequest: User Role:', req.user?.role);
-  console.log('hrReviewRequest: Request ID:', req.params.id);
-  console.log('hrReviewRequest: Request Body:', req.body);
+const approveInitialRequest = asyncHandler(async (req, res, next) => {
+  const { id: requestId } = req.params;
+  const { signature } = req.body;
+  const userId = req.user._id;
 
-  const { action, rejectionReason, signature } = req.body; // action: 'approve' or 'reject'
+  // Debug logging
+  console.log('INITIAL APPROVAL DEBUG:');
+  console.log(`Request ID attempting to approve: ${requestId}`);
+  console.log(`User: ${req.user.name} (${req.user.role})`);
+
+  // Verify user is Academic VP
+  if (req.user.role !== 'AcademicVicePresident') {
+    return next(new AppError('Only Academic Vice President can perform initial approval', 403));
+  }
+
+  const request = await ClearanceRequest.findById(requestId);
+  console.log(`Request found in database: ${request ? 'YES' : 'NO'}`);
+  
+  if (!request) {
+    // Let's check if any requests exist with similar IDs
+    const allRequests = await ClearanceRequest.find({}).select('_id referenceCode initiatedBy').populate('initiatedBy', 'name');
+    console.log('All existing requests in database:');
+    allRequests.forEach(req => {
+      console.log(`- ID: ${req._id}, Reference: ${req.referenceCode}, User: ${req.initiatedBy.name}`);
+    });
+    return next(new AppError('Clearance request not found', 404));
+  }
+
+  if (request.status !== 'initiated') {
+    return next(new AppError('Request is not in initiated status', 400));
+  }
+
+  // Update the VP initial step
+  const vpInitialStep = await ClearanceStep.findOneAndUpdate(
+    { requestId, reviewerRole: 'AcademicVicePresident', order: 1 },
+    { 
+      status: 'cleared', 
+      reviewedBy: userId, 
+      signature,
+      lastUpdatedAt: new Date() 
+    },
+    { new: true }
+  );
+
+  if (!vpInitialStep) {
+    return next(new AppError('VP initial step not found', 404));
+  }
+
+  // Update request status and signature
+  request.status = 'vp_initial_approval';
+  request.vpInitialSignature = signature;
+  request.vpInitialSignedAt = new Date();
+  request.initialApprovedAt = new Date();
+  await request.save();
+
+  // Update workflow - make next steps available
+  await updateWorkflowAvailability(requestId);
+
+  await ActivityLog.create({
+    userId,
+    action: 'INITIAL_APPROVAL',
+    description: `Academic VP provided initial validation for clearance request ${request.referenceCode}`,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Initial approval completed successfully',
+    data: request,
+  });
+});
+
+const rejectInitialRequest = asyncHandler(async (req, res, next) => {
+  const { requestId } = req.params;
+  const { rejectionReason } = req.body;
+  const userId = req.user._id;
+
+  // Verify user is Academic VP
+  if (req.user.role !== 'AcademicVicePresident') {
+    return next(new AppError('Only Academic Vice President can reject requests', 403));
+  }
+
+  if (!rejectionReason) {
+    return next(new AppError('Rejection reason is required', 400));
+  }
 
   try {
-    const request = await ClearanceRequest.findById(req.params.id);
-    console.log('hrReviewRequest: Request found:', request ? request._id : 'None');
-
+    const request = await ClearanceRequest.findById(requestId);
     if (!request) {
-      console.log('hrReviewRequest: Clearance request not found.');
       return next(new AppError('Clearance request not found', 404));
     }
 
-    // Ensure only HROfficer or HRDevelopmentReviewer can perform this action
-    if (!['HROfficer', 'HRDevelopmentReviewer'].includes(req.user.role)) {
-      console.log(`hrReviewRequest: Unauthorized role: ${req.user.role}`);
-      return next(new AppError('Not authorized to perform this action', 403));
+    if (request.status !== 'initiated') {
+      return next(new AppError('Request is not in initiated status', 400));
     }
 
-    console.log('hrReviewRequest: Current request status:', request.status);
-    // Ensure request is in the correct status for HR review
-    if (request.status !== 'pending_hr_review') {
-      console.log(`hrReviewRequest: Invalid status for HR review. Current: ${request.status}`);
-      return next(new AppError(`Request is not in 'pending_hr_review' status. Current status: ${request.status}`, 400));
-    }
-
-    if (action === 'approve') {
-      console.log('hrReviewRequest: Action: Approve');
-      request.status = 'pending_vp_approval';
-      if (signature) {
-        const hrDepartment = CLEARANCE_DEPARTMENTS.find(d => d.reviewerRole === 'HRDevelopmentReviewer');
-        const signaturePath = await saveBase64Image(signature, 'uploads', hrDepartment.name);
-        request.hrSignature = signaturePath;
-      }
-      await ActivityLog.create({
-        userId: req.user._id,
-        requestId: request._id,
-        action: 'STEP_APPROVED',
-        description: `Clearance request approved by HR Officer ${req.user.name}`,
-      });
-      console.log('hrReviewRequest: Request status set to pending_vp_approval.');
-      res.status(200).json({
-        success: true,
-        message: 'Clearance request sent to VP for approval.',
-        data: request,
-      });
-    } else if (action === 'reject') {
-      console.log('hrReviewRequest: Action: Reject');
-      if (!rejectionReason) {
-        console.log('hrReviewRequest: Rejection reason missing.');
-        return next(new AppError('Rejection reason is required for rejection.', 400));
-      }
-      request.status = 'rejected';
-      request.rejectionReason = rejectionReason;
-      await ActivityLog.create({
-        userId: req.user._id,
-        requestId: request._id,
-        action: 'HR_REJECTED',
-        description: `Clearance request rejected by HR Officer ${req.user.name}. Reason: ${rejectionReason}`,
-      });
-      console.log('hrReviewRequest: Request status set to rejected.');
-      res.status(200).json({
-        success: true,
-        message: 'Clearance request rejected by HR.',
-        data: request,
-      });
-    } else {
-      console.log('hrReviewRequest: Invalid action provided.');
-      return next(new AppError('Invalid action. Must be approve or reject', 400));
-    }
-
-    console.log('hrReviewRequest: Saving request with status:', request.status);
+    // Update request status
+    request.status = 'rejected';
+    request.rejectionReason = rejectionReason;
+    request.rejectedAt = new Date();
+    request.reviewedBy = userId;
     await request.save();
-    console.log('hrReviewRequest: Request saved successfully.');
+
+    await ActivityLog.create({
+      userId,
+      action: 'VP_INITIAL_REJECTION',
+      description: `Academic VP rejected clearance request ${request.referenceCode}: ${rejectionReason}`,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Request rejected successfully',
+      data: request,
+    });
   } catch (error) {
-    console.error('hrReviewRequest: An unexpected error occurred:', error);
-    return next(new AppError('An unexpected error occurred.', 500));
+    return next(new AppError('Failed to reject request', 500));
   }
 });
 
-// @desc    Approve initial clearance request
-// @route   PUT /api/clearance/requests/:id/approve-initial
-// @access  Private (VP ARCE)
-const approveInitialRequest = asyncHandler(async (req, res, next) => {
-  const { signature } = req.body;
-  const request = await ClearanceRequest.findById(req.params.id);
-
-  if (!request) {
-    return next(new AppError('Clearance request not found', 404));
-  }
-
-  if (req.user.role !== 'AcademicVicePresident') {
-    return next(new AppError('Not authorized to perform this action', 403));
-  }
-
-  if (request.status !== 'pending_vp_approval') {
-    return next(new AppError(`Request is not in 'pending_vp_approval' status. Current status: ${request.status}`, 400));
-  }
-
-  request.status = 'in_progress';
-  if (signature) {
-    const vpDepartment = CLEARANCE_DEPARTMENTS.find(d => d.reviewerRole === 'AcademicVicePresident');
-    const signaturePath = await saveBase64Image(signature, 'uploads', vpDepartment.name);
-    request.vpSignature = signaturePath;
-  }
-  await request.save();
-
-  const clearanceSteps = CLEARANCE_DEPARTMENTS.map((dept) => ({
-    requestId: request._id,
-    department: dept.name,
-    reviewerRole: dept.reviewerRole,
-    order: dept.order,
-  }));
-
-  await ClearanceStep.insertMany(clearanceSteps);
-
-  // Find the HR user to associate with the HR step
-  const hrUser = await User.findOne({ role: 'HRDevelopmentReviewer' });
-
-  // Mark HR and VP steps as 'cleared'
-  await ClearanceStep.updateMany(
-    {
-      requestId: request._id,
-      reviewerRole: { $in: ['HRDevelopmentReviewer', 'AcademicVicePresident'] },
-    },
-    {
-      $set: {
-        status: 'cleared',
-        reviewedBy: req.user._id, // Default to VP, overwrite for HR
-        signature: request.vpSignature, // Default to VP signature
-        lastUpdatedAt: new Date(),
-      },
-    }
-  );
-
-  // Specifically update the HR step with HR's signature and user
-  if (hrUser) {
-    await ClearanceStep.updateOne(
-      {
-        requestId: request._id,
-        reviewerRole: 'HRDevelopmentReviewer',
-      },
-      {
-        $set: {
-          reviewedBy: hrUser._id,
-          signature: request.hrSignature,
-        },
-      }
-    );
-  }
-
-
-  await ActivityLog.create({
-    userId: req.user._id,
-    requestId: request._id,
-    action: 'INITIAL_APPROVAL',
-    description: `Initial clearance request approved by ${req.user.name}`,
-  });
-
-  res.status(200).json({
-    success: true,
-    message: 'Clearance request approved and steps created.',
-    data: request,
-  });
-});
-
-// @desc    Reject initial clearance request
-// @route   PUT /api/clearance/requests/:id/reject-initial
-// @access  Private (VP ARCE)
-const rejectInitialRequest = asyncHandler(async (req, res, next) => {
-  const { rejectionReason } = req.body;
-  const request = await ClearanceRequest.findById(req.params.id);
-
-  if (!request) {
-    return next(new AppError('Clearance request not found', 404));
-  }
-
-  if (req.user.role !== 'AcademicVicePresident') {
-    return next(new AppError('Not authorized to perform this action', 403));
-  }
-
-  request.status = 'rejected';
-  request.rejectionReason = rejectionReason;
-  await request.save();
-
-  await ActivityLog.create({
-    userId: req.user._id,
-    requestId: request._id,
-    action: 'INITIAL_REJECTION',
-    description: `Initial clearance request rejected by ${req.user.name}`,
-  });
-
-  res.status(200).json({
-    success: true,
-    message: 'Clearance request rejected.',
-    data: request,
-  });
-});
-
-  
-
-// @desc    Update a clearance step
-// @route   PUT /api/clearance/steps/:id
-// @access  Private (Reviewer)
 const updateClearanceStep = asyncHandler(async (req, res, next) => {
-  const { status, comment, signature } = req.body;
-  const step = await ClearanceStep.findById(req.params.id);
+  const { id: stepId } = req.params;
+  const { status, signature, comment, notes } = req.body;
+  const userId = req.user._id;
+  const userRole = req.user.role;
 
+  console.log('UPDATE STEP DEBUG:');
+  console.log(`Step ID: ${stepId}`);
+  console.log(`User: ${req.user.name} (${userRole})`);
+
+  const step = await ClearanceStep.findById(stepId).populate('requestId');
   if (!step) {
+    // Check if step exists with different role name
+    const allSteps = await ClearanceStep.find({}).select('_id reviewerRole department order');
+    console.log(`Step ${stepId} not found. All existing steps:`);
+    allSteps.forEach(s => {
+      console.log(`- ID: ${s._id}, Role: ${s.reviewerRole}, Dept: ${s.department}, Order: ${s.order}`);
+    });
     return next(new AppError('Clearance step not found', 404));
   }
 
-  const authorizedRoles = [step.reviewerRole];
-  if (step.reviewerRole === 'ICTReviewer') {
-    authorizedRoles.push('ICTExcute');
-  }
-  // Add other mappings here if necessary
-  // e.g., if (step.reviewerRole === 'FinanceReviewer') { authorizedRoles.push('FinanceExcute'); }
+  console.log(`Found step: Role=${step.reviewerRole}, User Role=${userRole}, Match=${step.reviewerRole === userRole}`);
 
-  if (!authorizedRoles.includes(req.user.role)) {
-    return next(new AppError('Not authorized to review this step', 403));
+  // Verify user has permission to update this step
+  if (step.reviewerRole !== userRole) {
+    return next(new AppError('You do not have permission to update this step', 403));
   }
 
-  step.status = status;
-  if (status === 'pending') {
-    step.comment = undefined; // Clear comment when reverting to pending
+  // Verify step can be processed (dependencies met)
+  if (!step.canProcess) {
+    return next(new AppError('This step cannot be processed yet. Dependencies not met.', 400));
+  }
+
+  // Handle interdependent steps (Store 1 & Store 2)
+  if (step.isInterdependent && status === 'cleared') {
+    await handleInterdependentSteps(step.requestId._id, step.reviewerRole, userId, signature, comment, notes);
   } else {
+    // Regular step update
+    step.status = status;
+    step.reviewedBy = userId;
+    step.signature = signature;
     step.comment = comment;
-  }
-  step.reviewedBy = req.user._id;
-  step.lastUpdatedAt = new Date();
-
-  if (signature) {
-    const signaturePath = await saveBase64Image(signature, 'uploads', step.department);
-    step.signature = signaturePath;
+    step.notes = notes;
+    step.lastUpdatedAt = new Date();
+    await step.save();
   }
 
-  await step.save();
+  // Update workflow availability
+  await updateWorkflowAvailability(step.requestId._id);
+
+  // Check if all steps are completed
+  await checkAndCompleteRequest(step.requestId._id);
 
   await ActivityLog.create({
-    userId: req.user._id,
-    requestId: step.requestId,
+    userId,
     action: 'STEP_UPDATED',
-    description: `Clearance step for ${step.department} updated to ${status} by ${req.user.name}`,
+    description: `${step.department} step updated to ${status} by ${req.user.name}`,
   });
 
   res.status(200).json({
     success: true,
-    message: 'Clearance step updated successfully.',
+    message: 'Step updated successfully',
     data: step,
   });
 });
 
-// @desc    Approve final clearance request
-// @route   PUT /api/clearance/requests/:id/approve-final
-// @access  Private (VP ARCE)
-const approveFinalRequest = asyncHandler(async (req, res, next) => {
-  const request = await ClearanceRequest.findById(req.params.id);
 
-  if (!request) {
-    return next(new AppError('Clearance request not found', 404));
-  }
-
-  if (req.user.role !== 'AcademicVicePresident') {
-    return next(new AppError('Not authorized to perform this action', 403));
-  }
-
-  const steps = await ClearanceStep.find({ requestId: request._id });
-  const allCleared = steps.every((step) => step.status === 'cleared');
-
-  if (!allCleared) {
-    return next(new AppError('All departments must clear the request before final approval', 400));
-  }
-
-  request.status = 'cleared';
-  await request.save();
-
-  await ActivityLog.create({
-    userId: req.user._id,
-    requestId: request._id,
-    action: 'FINAL_APPROVAL',
-    description: `Final clearance request approved by ${req.user.name}`,
-  });
-
-  res.status(200).json({
-    success: true,
-    message: 'Clearance request has been fully approved and cleared.',
-    data: request,
-  });
-});
-
-// @desc    Get clearance requests for VP review
-// @route   GET /api/clearance/requests/vp-review
-// @access  Private (VP ARCE)
 const getRequestsForVP = asyncHandler(async (req, res, next) => {
-  const requests = await ClearanceRequest.find({
-    status: 'pending_vp_approval',
-  }).populate('initiatedBy', 'name email department').lean();
-
-  const processedRequests = requests.map(processRequestFiles);
-
-  res.status(200).json({
-    success: true,
-    data: processedRequests,
-  });
+  // Verify user is Academic VP
+  if (req.user.role !== 'AcademicVicePresident') {
+    return next(new AppError('Only Academic Vice President can access VP requests', 403));
+  }
+  
+  try {
+    // Get requests that need initial VP approval or final VP approval
+    const initialApprovalRequests = await ClearanceRequest.find({
+      status: 'initiated'
+    })
+      .populate('initiatedBy', 'name email department')
+      .sort({ createdAt: -1 });
+    
+    const finalApprovalRequests = await ClearanceRequest.find({
+      status: 'in_progress',
+      vpInitialSignature: { $exists: true },
+      vpFinalSignature: { $exists: false }
+    })
+      .populate('initiatedBy', 'name email department')
+      .sort({ createdAt: -1 });
+    
+    // Check if final approval requests actually have all other steps completed
+    const validFinalApprovalRequests = [];
+    for (const request of finalApprovalRequests) {
+      const allSteps = await ClearanceStep.find({ requestId: request._id });
+      const vpFinalStep = allSteps.find(step => step.reviewerRole === 'AcademicVicePresident' && step.vpSignatureType === 'final');
+      
+      if (vpFinalStep && vpFinalStep.canProcess) {
+        validFinalApprovalRequests.push(request);
+      }
+    }
+    
+    const allRequests = [...initialApprovalRequests, ...validFinalApprovalRequests];
+    
+    // Debug logging
+    console.log('VP REQUESTS DEBUG:');
+    console.log(`Initial approval requests: ${initialApprovalRequests.length}`);
+    console.log(`Final approval requests: ${validFinalApprovalRequests.length}`);
+    allRequests.forEach(req => {
+      console.log(`- Request ID: ${req._id}, Status: ${req.status}, Initiated By: ${req.initiatedBy.name}`);
+    });
+    
+    res.status(200).json({
+      success: true,
+      data: allRequests,
+    });
+  } catch (error) {
+    return next(new AppError('Failed to fetch VP requests', 500));
+  }
 });
 
-// @desc    Get all clearance requests
-// @route   GET /api/clearance/requests
-// @access  Private
-const getClearanceRequests = asyncHandler(async (req, res) => {
-  let query = {};
-
-  // SystemAdmin sees all requests
-  if (req.user.role === 'SystemAdmin') {
-    // No change to query, gets all
-  } 
-  // HR Officer sees requests pending their review or rejected by them
-  else if (req.user.role === 'HRDevelopmentReviewer') {
-    query.status = { $in: ['pending_hr_review', 'rejected'] };
+const getClearanceRequests = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+  
+  try {
+    const requests = await ClearanceRequest.find({ initiatedBy: userId })
+      .populate('initiatedBy', 'name email')
+      .populate('reviewedBy', 'name email')
+      .sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      data: requests,
+    });
+  } catch (error) {
+    return next(new AppError('Failed to fetch clearance requests', 500));
   }
-  // Other Reviewers see active requests ready for their review
-  else if (req.user.role.includes('Reviewer')) {
-    query.status = { $in: ['in_progress', 'cleared'] };
-  } 
-  // Standard users only see their own requests
-  else {
-    query.initiatedBy = req.user._id;
-  }
-
-  const requests = await ClearanceRequest.find(query)
-    .populate('initiatedBy', 'name email department')
-    .sort({ createdAt: -1 });
-
-  res.status(200).json({
-    success: true,
-    data: requests,
-  });
 });
 
-// @desc    Get clearance request by ID
-// @route   GET /api/clearance/requests/:id
-// @access  Private
 const getClearanceRequestById = asyncHandler(async (req, res, next) => {
-  const request = await ClearanceRequest.findById(req.params.id).populate(
-    'initiatedBy',
-    'name email department'
-  );
-
-  if (!request) {
-    return next(new AppError('Clearance request not found', 404));
+  const { id } = req.params;
+  const userId = req.user._id;
+  
+  try {
+    const request = await ClearanceRequest.findById(id)
+      .populate('initiatedBy', 'name email')
+      .populate('reviewedBy', 'name email');
+    
+    if (!request) {
+      return next(new AppError('Clearance request not found', 404));
+    }
+    
+    // Check if user has permission to view this request
+    if (request.initiatedBy._id.toString() !== userId.toString() && !req.user.role.includes('Reviewer') && req.user.role !== 'SystemAdmin') {
+      return next(new AppError('You do not have permission to view this request', 403));
+    }
+    
+    // Get all steps for this request
+    const steps = await ClearanceStep.find({ requestId: id })
+      .populate('reviewedBy', 'name email')
+      .sort({ order: 1 });
+    
+    res.status(200).json({
+      success: true,
+      data: { ...request.toObject(), steps },
+    });
+  } catch (error) {
+    return next(new AppError('Failed to fetch clearance request', 500));
   }
-
-  const steps = await ClearanceStep.find({ requestId: req.params.id })
-    .populate('reviewedBy', 'name email department')
-    .sort({ order: 1 });
-
-  res.status(200).json({
-    success: true,
-    data: {
-      request,
-      steps,
-    },
-  });
 });
 
 const getMyReviewSteps = asyncHandler(async (req, res, next) => {
-  console.log(`GET_MY_REVIEW_STEPS: User object:`, req.user);
-  console.log(`GET_MY_REVIEW_STEPS: Fetching steps for role: ${req.user.role}`);
-
-  // Explicitly check if the user's role includes 'Reviewer'
-  if (!req.user.role.includes('Reviewer') && req.user.role !== 'AcademicVicePresident') {
-    console.warn(`GET_MY_REVIEW_STEPS: Access denied for role: ${req.user.role}`);
-    return next(new AppError(`Access denied. Role '${req.user.role}' is not authorized to access this route.`, 403));
-  }
-
-  // Find the correct reviewerRole based on the user's role
-  const departmentMapping = CLEARANCE_DEPARTMENTS.find(dept => dept.reviewerRole === req.user.role || dept.name === req.user.role);
-  const targetReviewerRole = departmentMapping ? departmentMapping.reviewerRole : req.user.role; // Fallback to user role if no specific mapping
-  console.log(`GET_MY_REVIEW_STEPS: Determined targetReviewerRole: ${targetReviewerRole}`);
-
+  const userRole = req.user.role;
+  
   try {
+    // Debug logging for Department Head and College Head
+    if (userRole === 'DepartmentHeadReviewer' || userRole === 'DepartmentReviewer' || userRole.includes('Department')) {
+      console.log('DEPARTMENT HEAD DEBUG:');
+      console.log(`User: ${req.user.name} (${userRole})`);
+      
+      // Check all steps for this role
+      const allSteps = await ClearanceStep.find({ reviewerRole: userRole })
+        .populate('requestId', 'referenceCode status vpInitialSignature')
+        .sort({ createdAt: -1 });
+      
+      console.log(`Total steps for ${userRole}: ${allSteps.length}`);
+      allSteps.forEach(step => {
+        console.log(`- Step ID: ${step._id}, Order: ${step.order}, Status: ${step.status}, CanProcess: ${step.canProcess}, Request: ${step.requestId?.referenceCode}, Request Status: ${step.requestId?.status}, VP Initial: ${!!step.requestId?.vpInitialSignature}`);
+      });
+    }
+
+    // Debug logging for College Head
+    if (userRole === 'CollegeHeadReviewer' || userRole === 'CollegeReviewer' || userRole.includes('College')) {
+      console.log('COLLEGE HEAD DEBUG:');
+      console.log(`User: ${req.user.name} (${userRole})`);
+      
+      // Check all steps for this role
+      const allSteps = await ClearanceStep.find({ reviewerRole: userRole })
+        .populate('requestId', 'referenceCode status vpInitialSignature')
+        .sort({ createdAt: -1 });
+      
+      console.log(`Total steps for ${userRole}: ${allSteps.length}`);
+      allSteps.forEach(step => {
+        console.log(`- Step ID: ${step._id}, Order: ${step.order}, Status: ${step.status}, CanProcess: ${step.canProcess}, Request: ${step.requestId?.referenceCode}, Request Status: ${step.requestId?.status}, VP Initial: ${!!step.requestId?.vpInitialSignature}`);
+      });
+    }
+    
+    // Find steps assigned to the current user's role that are available for processing
     const steps = await ClearanceStep.find({
-      reviewerRole: targetReviewerRole,
+      reviewerRole: userRole,
+      status: { $in: ['available', 'pending'] },
+      canProcess: true,
       hiddenFor: { $ne: req.user._id }
     })
       .populate({
         path: 'requestId',
-        select: 'initiatedBy purpose status createdAt formData uploadedFiles',
         populate: {
           path: 'initiatedBy',
-          select: 'name',
-        },
-      }).lean();
-
-    const processedSteps = steps.map(step => {
-      if (step.requestId) {
-        step.requestId = processRequestFiles(step.requestId);
-      }
-      return step;
-    });
-
-    console.log(`GET_MY_REVIEW_STEPS: Found ${processedSteps.length} steps for reviewerRole: ${targetReviewerRole}.`);
+          select: 'name email department'
+        }
+      })
+      .sort({ 'requestId.createdAt': -1, order: 1 });
+    
     res.status(200).json({
       success: true,
-      data: processedSteps,
+      data: steps,
     });
   } catch (error) {
-    console.error('GET_MY_REVIEW_STEPS: ERROR during database query or population:', error);
-    next(error);
+    return next(new AppError('Failed to fetch review steps', 500));
   }
 });
 
-const processRequestFiles = (request) => {
-  const requestObj = request.toObject ? request.toObject() : { ...request };
-
-  if (!requestObj.uploadedFiles) {
-    requestObj.uploadedFiles = [];
-    return requestObj;
-  }
-
-  if (requestObj.formData && requestObj.formData.fileMetadata) {
-    const metadataMap = new Map(
-      requestObj.formData.fileMetadata.map(meta => [meta.fileName, meta.visibility])
-    );
-    requestObj.uploadedFiles = requestObj.uploadedFiles.map(file => ({
-      ...file,
-      visibility: file.visibility || metadataMap.get(file.fileName) || 'all',
-    }));
-  } else {
-    requestObj.uploadedFiles = requestObj.uploadedFiles.map(file => ({
-      ...file,
-      visibility: file.visibility || 'all',
-    }));
-  }
-
-  return requestObj;
-};
-
-// @desc    Get HR pending requests
-// @route   GET /api/clearance/requests/hr-pending
-// @access  Private (HROfficer)
-const getHRPendingRequests = asyncHandler(async (req, res) => {
-  const requests = await ClearanceRequest.find({
-    status: 'pending_hr_review',
-  }).populate('initiatedBy', 'name email department').lean();
-
-  const processedRequests = requests.map(processRequestFiles);
-
-  res.status(200).json({
-    success: true,
-    data: processedRequests,
-  });
-});
-
-// @desc    Hide a clearance step from a reviewer's view
-// @route   PUT /api/clearance/steps/:id/hide
-// @access  Private (Reviewer)
 const hideClearanceStep = asyncHandler(async (req, res, next) => {
-  const step = await ClearanceStep.findById(req.params.id);
-
-  if (!step) {
-    return next(new AppError('Clearance step not found', 404));
+  const { stepId } = req.params;
+  const userId = req.user._id;
+  
+  try {
+    const step = await ClearanceStep.findById(stepId);
+    if (!step) {
+      return next(new AppError('Clearance step not found', 404));
+    }
+    
+    // Add user to hiddenFor array if not already present
+    if (!step.hiddenFor.includes(userId)) {
+      step.hiddenFor.push(userId);
+      await step.save();
+    }
+    
+    await ActivityLog.create({
+      userId,
+      action: 'STEP_HIDDEN',
+      description: `Hidden clearance step for ${step.department}`,
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Step hidden successfully',
+    });
+  } catch (error) {
+    return next(new AppError('Failed to hide clearance step', 500));
   }
-
-  const authorizedRoles = [step.reviewerRole];
-  if (step.reviewerRole === 'ICTReviewer') {
-    authorizedRoles.push('ICTExcute');
-  }
-  // Add other mappings here if necessary
-
-  if (!authorizedRoles.includes(req.user.role)) {
-    return next(new AppError('Not authorized to hide this step', 403));
-  }
-
-  step.hiddenFor.push(req.user._id);
-  await step.save();
-
-  await ActivityLog.create({
-    userId: req.user._id,
-    requestId: step.requestId,
-    action: 'STEP_HIDDEN',
-    description: `Clearance step for ${step.department} hidden by ${req.user.name}`,
-  });
-
-  res.status(200).json({
-    success: true,
-    message: 'Clearance step hidden successfully.',
-    data: {},
-  });
 });
 
 const verifyClearanceRequest = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const request = await ClearanceRequest.findById(id).populate('initiatedBy', 'name department');
+  
+  try {
+    const request = await ClearanceRequest.findById(id)
+      .populate('initiatedBy', 'name email department')
+      .select('-__v');
+    
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Clearance request not found',
+      });
+    }
+    
+    // Get all steps for verification
+    const steps = await ClearanceStep.find({ requestId: id })
+      .populate('reviewedBy', 'name email')
+      .sort({ order: 1 })
+      .select('-__v');
+    
+    // Public verification data (no sensitive information)
+    const verificationData = {
+      referenceCode: request.referenceCode,
+      staffName: request.initiatedBy.name,
+      department: request.formData.department,
+      purpose: request.purpose,
+      status: request.status,
+      initiatedAt: request.initiatedAt,
+      completedAt: request.completedAt,
+      archivedAt: request.archivedAt,
+      stepsCompleted: steps.filter(step => step.status === 'cleared').length,
+      totalSteps: steps.length,
+      isValid: request.status === 'cleared' || request.status === 'archived',
+    };
+    
+    res.status(200).json({
+      success: true,
+      data: verificationData,
+    });
+  } catch (error) {
+    return next(new AppError('Failed to verify clearance request', 500));
+  }
+});
 
+// Helper function to update workflow step availability based on dependencies
+const updateWorkflowAvailability = async (requestId) => {
+  const allSteps = await ClearanceStep.find({ requestId }).sort({ order: 1 });
+  
+  for (const step of allSteps) {
+    if (step.status === 'cleared') {
+      continue; // Skip already cleared steps
+    }
+    
+    // Check if all dependencies are met
+    const dependenciesMet = await checkDependencies(step, allSteps);
+    
+    if (dependenciesMet && !step.canProcess) {
+      step.canProcess = true;
+      step.status = 'available';
+      await step.save();
+    } else if (!dependenciesMet && step.canProcess) {
+      step.canProcess = false;
+      step.status = 'pending';
+      await step.save();
+    }
+  }
+};
+
+// Helper function to check if step dependencies are satisfied
+const checkDependencies = async (step, allSteps) => {
+  if (!step.dependsOn || step.dependsOn.length === 0) {
+    return true; // No dependencies
+  }
+  
+  // Check if all dependent steps are cleared
+  for (const dependentOrder of step.dependsOn) {
+    const dependentSteps = allSteps.filter(s => s.order === dependentOrder);
+    const allCleared = dependentSteps.every(s => s.status === 'cleared');
+    
+    if (!allCleared) {
+      return false;
+    }
+  }
+  
+  return true;
+};
+
+// Helper function to handle interdependent steps (Store 1 & Store 2)
+const handleInterdependentSteps = async (requestId, reviewerRole, userId, signature, comment, notes) => {
+  const interdependentSteps = await ClearanceStep.find({
+    requestId,
+    isInterdependent: true,
+    interdependentWith: { $in: [reviewerRole] }
+  });
+  
+  // Update the current step
+  const currentStep = interdependentSteps.find(step => step.reviewerRole === reviewerRole);
+  if (currentStep) {
+    currentStep.status = 'cleared';
+    currentStep.reviewedBy = userId;
+    currentStep.signature = signature;
+    currentStep.comment = comment;
+    currentStep.notes = notes;
+    currentStep.lastUpdatedAt = new Date();
+    await currentStep.save();
+  }
+  
+  // Check if all interdependent steps are now cleared
+  const allInterdependentCleared = interdependentSteps.every(step => 
+    step.status === 'cleared' || step.reviewerRole === reviewerRole
+  );
+  
+  if (allInterdependentCleared) {
+    // Update all interdependent steps to cleared if not already
+    for (const step of interdependentSteps) {
+      if (step.reviewerRole !== reviewerRole && step.status !== 'cleared') {
+        step.status = 'available';
+        step.canProcess = true;
+        await step.save();
+      }
+    }
+  }
+};
+
+// Helper function to check if request is complete and update status
+const checkAndCompleteRequest = async (requestId) => {
+  const allSteps = await ClearanceStep.find({ requestId });
+  const allCleared = allSteps.every(step => step.status === 'cleared');
+  
+  if (allCleared) {
+    const request = await ClearanceRequest.findById(requestId);
+    if (request && request.status !== 'cleared') {
+      request.status = 'cleared';
+      request.completedAt = new Date();
+      await request.save();
+      
+      await ActivityLog.create({
+        userId: request.initiatedBy,
+        action: 'REQUEST_COMPLETED',
+        description: `Clearance request ${request.referenceCode} has been fully completed`,
+      });
+    }
+  }
+};
+
+// Final VP approval (second signature)
+const approveFinalRequest = asyncHandler(async (req, res, next) => {
+  const { requestId } = req.params;
+  const { signature } = req.body;
+  const userId = req.user._id;
+
+  // Verify user is Academic VP
+  if (req.user.role !== 'AcademicVicePresident') {
+    return next(new AppError('Only Academic Vice President can perform final approval', 403));
+  }
+
+  const request = await ClearanceRequest.findById(requestId);
   if (!request) {
     return next(new AppError('Clearance request not found', 404));
   }
 
+  // Find VP final step
+  const vpFinalStep = await ClearanceStep.findOne({
+    requestId,
+    reviewerRole: 'AcademicVicePresident',
+    order: 11,
+    vpSignatureType: 'final'
+  });
+
+  if (!vpFinalStep) {
+    return next(new AppError('VP final step not found', 404));
+  }
+
+  if (!vpFinalStep.canProcess) {
+    return next(new AppError('Cannot process final approval. Dependencies not met.', 400));
+  }
+
+  // Update the VP final step
+  vpFinalStep.status = 'cleared';
+  vpFinalStep.reviewedBy = userId;
+  vpFinalStep.signature = signature;
+  vpFinalStep.lastUpdatedAt = new Date();
+  await vpFinalStep.save();
+
+  // Update request with VP final signature
+  request.vpFinalSignature = signature;
+  request.vpFinalSignedAt = new Date();
+  await request.save();
+
+  // Update workflow availability
+  await updateWorkflowAvailability(requestId);
+
+  await ActivityLog.create({
+    userId,
+    action: 'VP_FINAL_APPROVAL',
+    description: `Academic VP provided final oversight approval for clearance request ${request.referenceCode}`,
+  });
+
   res.status(200).json({
     success: true,
-    data: {
-      referenceCode: request.referenceCode,
-      status: request.status,
-      initiatedBy: request.initiatedBy,
-      purpose: request.purpose,
-      createdAt: request.createdAt,
-      updatedAt: request.updatedAt,
-    },
+    message: 'Final VP approval completed successfully',
+    data: request,
   });
+});
+
+// Archive request (final step)
+const archiveRequest = asyncHandler(async (req, res, next) => {
+  const { requestId } = req.params;
+  const { signature } = req.body;
+  const userId = req.user._id;
+
+  // Verify user is Records Archives Officer
+  if (req.user.role !== 'RecordsArchivesReviewer') {
+    return next(new AppError('Only Records and Archives Officer can archive requests', 403));
+  }
+
+  const request = await ClearanceRequest.findById(requestId);
+  if (!request) {
+    return next(new AppError('Clearance request not found', 404));
+  }
+
+  // Find archive step
+  const archiveStep = await ClearanceStep.findOne({
+    requestId,
+    reviewerRole: 'RecordsArchivesReviewer',
+    order: 12
+  });
+
+  if (!archiveStep || !archiveStep.canProcess) {
+    return next(new AppError('Cannot archive request. Dependencies not met.', 400));
+  }
+
+  // Update archive step
+  archiveStep.status = 'cleared';
+  archiveStep.reviewedBy = userId;
+  archiveStep.signature = signature;
+  archiveStep.lastUpdatedAt = new Date();
+  await archiveStep.save();
+
+  // Update request status to archived
+  request.status = 'archived';
+  request.archivedAt = new Date();
+  await request.save();
+
+  await ActivityLog.create({
+    userId,
+    action: 'REQUEST_ARCHIVED',
+    description: `Clearance request ${request.referenceCode} has been archived by Records and Archives Officer`,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Request archived successfully',
+    data: request,
+  });
+});
+
+// Quick fix for role name mismatches
+const fixRoleNames = asyncHandler(async (req, res, next) => {
+  try {
+    // Update Department Head role names
+    const deptResult = await ClearanceStep.updateMany(
+      { reviewerRole: 'DepartmentHeadReviewer' },
+      { reviewerRole: 'DepartmentReviewer' }
+    );
+
+    // Update College Head role names  
+    const collegeResult = await ClearanceStep.updateMany(
+      { reviewerRole: 'CollegeHeadReviewer' },
+      { reviewerRole: 'CollegeReviewer' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Role names updated successfully',
+      data: {
+        departmentStepsUpdated: deptResult.modifiedCount,
+        collegeStepsUpdated: collegeResult.modifiedCount
+      }
+    });
+  } catch (error) {
+    return next(new AppError('Failed to update role names', 500));
+  }
 });
 
 module.exports = {
   createClearanceRequest,
-  hrReviewRequest,
   approveInitialRequest,
   rejectInitialRequest,
   updateClearanceStep,
   approveFinalRequest,
+  archiveRequest,
   getRequestsForVP,
   getClearanceRequests,
   getClearanceRequestById,
   getMyReviewSteps,
-  getHRPendingRequests,
   hideClearanceStep,
   verifyClearanceRequest,
+  updateWorkflowAvailability,
+  handleInterdependentSteps,
+  checkAndCompleteRequest,
+  fixRoleNames,
 };
-
-// 07 77 676744  

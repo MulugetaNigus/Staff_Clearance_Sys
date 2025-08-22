@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { toastUtils } from '../utils/toastUtils';
 import { useAuth } from '../context/AuthContext';
 import ClearanceForm from './ClearanceForm';
 import ProfileEditor from './ProfileEditor';
 import ProgressTracker from './ProgressTracker';
-import ReviewerDashboard from './ReviewerDashboard';
 import VPApprovalDashboard from './VPApprovalDashboard';
+import ReviewerDashboard from './ReviewerDashboard';
+import HRPendingRequestsDashboard from './HRPendingRequestsDashboard';
 import UserManagement from './UserManagement';
 import CreateUser from './CreateUser';
-import HRPendingRequestsDashboard from './HRPendingRequestsDashboard';
-import { clearanceService } from '../services/clearanceService';
+import EmptyState from './EmptyState';
+import {clearanceService} from '../services/clearanceService';
+import { toastUtils } from '../utils/toastUtils';
+import type { ClearanceStep } from '../types/clearance';
 import { dashboardService } from '../services/dashboardService';
 
 interface DashboardContentProps {
@@ -72,7 +74,7 @@ const QuickActions: React.FC<{ role: string; setActiveTab: (tab: string) => void
   );
 };
 
-const DashboardOverview: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTab }) => {
+const DashboardOverviewComponent: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTab }) => {
   const { user } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -238,14 +240,27 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
 
   switch (activeTab) {
     case 'dashboard':
-      return <DashboardOverview setActiveTab={setActiveTab} />;
+      return <DashboardOverviewComponent setActiveTab={setActiveTab} />;
     case 'clearance':
       return <ClearanceForm onSubmit={handleClearanceSubmit} isLoading={isLoading} />;
     case 'profile':
       return <ProfileEditor />;
     case 'track-clearance':
       if (isLoading) return <div>Loading...</div>;
-      if (error) return <div className="text-center p-10">No active clearance request found.</div>;
+      if (error) {
+        return (
+          <EmptyState
+            title="No Active Clearance Request"
+            description="You haven't initiated a clearance request yet. Start your clearance process to begin tracking your progress through all required departmental approvals."
+            icon="📊"
+            actionButton={{
+              text: "Start Clearance Process",
+              onClick: () => setActiveTab('clearance'),
+              color: 'blue'
+            }}
+          />
+        );
+      }
       return <ProgressTracker steps={clearanceSteps} />;
     case 'vp-approval':
       return <VPApprovalDashboard />;
@@ -266,7 +281,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
     case 'settings':
       return <GenericContent title="Settings" icon="⚙️" />;
     default:
-      return <DashboardOverview setActiveTab={setActiveTab} />;
+      return <DashboardOverviewComponent setActiveTab={setActiveTab} />;
   }
 };
 

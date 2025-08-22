@@ -36,8 +36,8 @@ export const clearanceService = {
     return response.data;
   },
 
-  approveFinalRequest: async (id: string) => {
-    const response = await API.put(`/clearance/requests/${id}/approve-final`);
+  approveFinalRequest: async (id: string, signature?: string) => {
+    const response = await API.put(`/clearance/requests/${id}/approve-final`, { signature });
     return response.data;
   },
 
