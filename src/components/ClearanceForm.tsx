@@ -32,7 +32,7 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
   const { user } = useAuth();
   const [purpose, setPurpose] = useState('');
   const [teacherId, setTeacherId] = useState('');
-  const [department, setDepartment] = useState('');
+  const [department] = useState(user?.department || '');
   const [supportingDocuments, setSupportingDocuments] = useState<UploadedFile[]>([]);
   const [error, setError] = useState('');
 
@@ -68,9 +68,12 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
       fileMetadata: supportingDocuments.map(doc => ({ fileName: doc.file.name, visibility: doc.visibility }))
     }));
 
-    supportingDocuments.forEach(doc => {
-      formData.append('clearanceFiles', doc.file);
+    supportingDocuments.forEach((file) => {
+      formData.append('clearanceFiles', file.file);
     });
+
+    const visibilityData = supportingDocuments.map(f => ({ filename: f.file.name, visibility: f.visibility }));
+    formData.append('visibility', JSON.stringify(visibilityData));
 
     await onSubmit(formData);
   };

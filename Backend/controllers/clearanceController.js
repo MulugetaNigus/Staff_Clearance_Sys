@@ -40,14 +40,23 @@ const CLEARANCE_DEPARTMENTS = [
 // @route   POST /api/clearance/requests
 // @access  Private
 const createClearanceRequest = asyncHandler(async (req, res, next) => {
-  let parsedFormData = {};
-  try {
-    parsedFormData = JSON.parse(req.body.formData);
-  } catch (e) {
-    return next(new AppError('Invalid form data format.', 400));
-  }
-  const { purpose, fileMetadata, ...otherFormData } = parsedFormData;
+  const { formData, visibility } = req.body;
+  let parsedFormData;
+  let visibilityData;
 
+  try {
+    parsedFormData = JSON.parse(formData);
+  } catch (e) {
+    return next(new AppError('Invalid formData format.', 400));
+  }
+
+  try {
+    visibilityData = visibility ? JSON.parse(visibility) : [];
+  } catch (e) {
+    return next(new AppError('Invalid visibility data format.', 400));
+  }
+
+  const { purpose, ...otherFormData } = parsedFormData;
   const staffId = req.user.id || req.user._id;
 
   if (!purpose) {
@@ -56,25 +65,25 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
 
   const existingRequest = await ClearanceRequest.findOne({
     initiatedBy: req.user._id,
-    status: { $in: ['pending_approval', 'in_progress'] },
+    status: { $in: ['pending_hr_review', 'pending_vp_approval', 'in_progress'] },
   });
 
   if (existingRequest) {
-    return next(new AppError('You already have a pending clearance request', 400));
+    return next(new AppError('You already have a pending clearance request.', 400));
   }
 
-  const referenceCode = `TCS-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`;
+  const referenceCode = `CL-${Date.now()}`;
 
-  const uploadedFiles = req.files ? req.files.map((file, index) => {
-    const metadata = fileMetadata ? fileMetadata[index] : {};
-    return {
-      fileName: file.originalname,
-      filePath: file.path,
-      mimetype: file.mimetype,
-      size: file.size,
-      visibility: metadata.visibility || 'all',
-    };
-  }) : [];
+  const visibilityMap = new Map(visibilityData.map(item => [item.filename, item.visibility]));
+
+  const uploadedFiles = req.files ? req.files.map(file => ({
+    fileName: file.filename,
+    originalName: file.originalname,
+    filePath: file.path,
+    fileType: file.mimetype,
+    fileSize: file.size,
+    visibility: visibilityMap.get(file.originalname) || 'all',
+  })) : [];
 
   const clearanceRequest = await ClearanceRequest.create({
     referenceCode,

@@ -187,10 +187,8 @@ const GenericContent: React.FC<{ title: string; icon: string }> = ({ title, icon
 const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiveTab }) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [clearanceRequest, setClearanceRequest] = useState<any>(null);
   const [clearanceSteps, setClearanceSteps] = useState<ClearanceStep[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
 
   useEffect(() => {
     const fetchMyClearance = async () => {
@@ -199,7 +197,6 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
         const response = await clearanceService.getClearanceRequests();
         if (response.success && response.data.length > 0) {
           const myRequest = response.data[0];
-          setClearanceRequest(myRequest);
           const stepsResponse = await clearanceService.getClearanceRequestById(myRequest._id);
           if (stepsResponse.success) {
             setClearanceSteps(stepsResponse.data.steps);
@@ -218,11 +215,11 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
     }
   }, [user]);
 
-  const handleClearanceSubmit = async (data: { purpose: string; supportingDocumentUrl?: string }) => {
+  const handleClearanceSubmit = async (formData: FormData) => {
     setIsLoading(true);
     const loadingToast = toastUtils.loading('Submitting clearance request...');
     try {
-      const response = await clearanceService.createClearanceRequest(data);
+      const response = await clearanceService.createClearanceRequest(formData);
       if (response.success) {
         toastUtils.dismiss(loadingToast);
         toastUtils.clearance.submitSuccess(response.message);
