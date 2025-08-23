@@ -1,7 +1,7 @@
 # Enhanced Clearance Workflow - Testing Guide
 
 ## Overview
-This guide provides comprehensive testing procedures for the enhanced academic staff clearance workflow system.
+This guide provides comprehensive testing procedures for the enhanced academic staff clearance workflow system with 13 sequential workflow steps across 5 stages.
 
 ## Test Environment Setup
 
@@ -55,32 +55,43 @@ This guide provides comprehensive testing procedures for the enhanced academic s
   3. Process approval with signature
 - **Expected Result**: Stage 1 completion triggers Stage 2 availability
 
-### 2. Workflow Stage 2: Property Clearances
+### 2. Workflow Stage 2: ICT & Property Clearances
 
-#### Test Case 2.1: Store 1 Officer Clearance
+#### Test Case 2.1: ICT Executive Equipment & Email Review
+- **Role**: ICTExecutive
+- **Dependencies**: Stage 1 completed (All other departments)
+- **Steps**:
+  1. Login as ICT Executive
+  2. Review equipment/laptops assigned to staff
+  3. Verify no equipment damage or missing items
+  4. Deactivate staff email addresses and system access
+  5. Provide digital signature and comments
+- **Expected Result**: ICT step cleared, Store officers become available
+
+#### Test Case 2.2: Store 1 Officer Clearance
 - **Role**: Store1Officer
-- **Dependencies**: Stage 1 completed
+- **Dependencies**: ICT Executive approval completed
 - **Steps**:
   1. Login as Store 1 Officer
-  2. Process clearance request
+  2. Process asset return clearance request
   3. Provide signature and comments
 - **Expected Result**: Store 1 step cleared, but interdependent Store 2 still required
 
-#### Test Case 2.2: Store 2 Officer Clearance (Interdependency Test)
+#### Test Case 2.3: Store 2 Officer Clearance (Interdependency Test)
 - **Role**: Store2Officer
-- **Dependencies**: Stage 1 completed
+- **Dependencies**: ICT Executive approval completed
 - **Steps**:
   1. Login as Store 2 Officer
-  2. Process clearance request
+  2. Process asset return clearance request
   3. Provide signature
 - **Expected Result**: Both Store officers completed triggers Property Executive availability
 
-#### Test Case 2.3: Property Executive Director Approval
+#### Test Case 2.4: Property Executive Director Approval
 - **Role**: PropertyExecutiveDirector
-- **Dependencies**: Both Store officers completed
+- **Dependencies**: ICT Executive AND both Store officers completed
 - **Steps**:
   1. Login as Property Executive Director
-  2. Review interdependent clearances
+  2. Review ICT clearance and interdependent store clearances
   3. Approve property clearance
 - **Expected Result**: Stage 2 completion, Stage 3 becomes available
 
@@ -156,11 +167,15 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 - **Test**: User tries to process step for wrong role
 - **Expected Result**: Access denied error
 
-### Edge Case 3: Interdependency Breaking
+### Edge Case 3: ICT Executive Dependency
+- **Test**: Store officers try to process before ICT Executive approval
+- **Expected Result**: Store officer steps remain unavailable until ICT Executive completes
+
+### Edge Case 4: Interdependency Breaking
 - **Test**: Only one Store officer approves, Property Executive tries to process
 - **Expected Result**: Step remains unavailable until both Store officers complete
 
-### Edge Case 4: Dual VP Signature Validation
+### Edge Case 5: Dual VP Signature Validation
 - **Test**: Verify VP can't provide final approval without initial approval
 - **Expected Result**: Proper validation and error handling
 
@@ -215,8 +230,9 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 - **Email Notifications**: If applicable
 
 ## Success Criteria
-- ✅ All 5 workflow stages process sequentially
-- ✅ Interdependencies properly enforced (Store 1 & Store 2)
+- ✅ All 5 workflow stages process sequentially (13 total steps)
+- ✅ ICT Executive step processes before Store officers and Property Executive Director
+- ✅ Interdependencies properly enforced (Store 1 & Store 2 depend on ICT Executive)
 - ✅ Dual VP signatures work correctly (initial + final)
 - ✅ Role-based access control functions properly
 - ✅ UI components display accurate workflow status

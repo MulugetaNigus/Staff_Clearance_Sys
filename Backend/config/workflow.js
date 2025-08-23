@@ -57,23 +57,32 @@ const ACADEMIC_STAFF_WORKFLOW = [
   // Stage 2: Conditional & Interdependent Clearances
   { 
     stage: WORKFLOW_STAGES.CONDITIONAL_INTERDEPENDENT, 
+    name: 'ICT Executive Equipment & Email Review', 
+    roles: ['ICTExecutiveReviewer'], 
+    order: 5, 
+    isSequential: true,
+    description: 'ICT Executive reviews laptops/equipment and deactivates email addresses',
+    dependsOn: [4]
+  },
+  { 
+    stage: WORKFLOW_STAGES.CONDITIONAL_INTERDEPENDENT, 
     name: 'Store Officers Asset Returns', 
     roles: ['Store1Reviewer', 'Store2Reviewer'], 
-    order: 5, 
+    order: 6, 
     isSequential: false,
     description: 'Store 1 & Store 2 are interdependent - both must sign for either to proceed',
     isInterdependent: true,
     interdependentWith: ['Store1Reviewer', 'Store2Reviewer'],
-    dependsOn: [4]
+    dependsOn: [5]
   },
   { 
     stage: WORKFLOW_STAGES.CONDITIONAL_INTERDEPENDENT, 
     name: 'Property Executive Director Validation', 
     roles: ['PropertyExecutiveDirectorReviewer'], 
-    order: 6, 
+    order: 7, 
     isSequential: true,
-    description: 'Property Executive Director verifies after both stores approve',
-    dependsOn: [5]
+    description: 'Property Executive Director verifies after ICT Executive and both stores approve',
+    dependsOn: [6]
   },
 
   // Stage 3: Financial Clearance (Sequential)
@@ -81,28 +90,28 @@ const ACADEMIC_STAFF_WORKFLOW = [
     stage: WORKFLOW_STAGES.FINANCIAL_CLEARANCE, 
     name: 'Finance Executive Review', 
     roles: ['FinanceExecutiveReviewer'], 
-    order: 7, 
+    order: 8, 
     isSequential: true,
     description: 'Finance Executive checks unpaid loans and outstanding dues',
-    dependsOn: [6]
+    dependsOn: [7]
   },
   { 
     stage: WORKFLOW_STAGES.FINANCIAL_CLEARANCE, 
     name: 'Senior Finance Specialist Review', 
     roles: ['SeniorFinanceSpecialistReviewer'], 
-    order: 8, 
+    order: 9, 
     isSequential: true,
     description: 'Detailed check on smaller financial transactions',
-    dependsOn: [7]
+    dependsOn: [8]
   },
   { 
     stage: WORKFLOW_STAGES.FINANCIAL_CLEARANCE, 
     name: 'Internal Audit Executive Director', 
     roles: ['InternalAuditExecutiveDirectorReviewer'], 
-    order: 9, 
+    order: 10, 
     isSequential: true,
     description: 'Final financial audit for hidden liabilities',
-    dependsOn: [8]
+    dependsOn: [9]
   },
 
   // Stage 4: Human Resource & Final Approvals
@@ -110,19 +119,19 @@ const ACADEMIC_STAFF_WORKFLOW = [
     stage: WORKFLOW_STAGES.FINAL_APPROVALS, 
     name: 'HR Competency Development Team Leader', 
     roles: ['HRCompetencyDevelopmentReviewer'], 
-    order: 10, 
+    order: 11, 
     isSequential: true,
     description: 'HR verifies training agreements and employee records',
-    dependsOn: [9]
+    dependsOn: [10]
   },
   { 
     stage: WORKFLOW_STAGES.FINAL_APPROVALS, 
     name: 'Academic VP Final Oversight', 
     roles: ['AcademicVicePresident'], 
-    order: 11, 
+    order: 12, 
     isSequential: true,
     description: 'VP final signature confirming full clearance completion',
-    dependsOn: [10],
+    dependsOn: [11],
     vpSignatureType: 'final'
   },
 
@@ -131,10 +140,10 @@ const ACADEMIC_STAFF_WORKFLOW = [
     stage: WORKFLOW_STAGES.ARCHIVING, 
     name: 'Records and Archives Officer', 
     roles: ['RecordsArchivesOfficerReviewer'], 
-    order: 12, 
+    order: 13, 
     isSequential: true,
     description: 'Final archiving and record keeping',
-    dependsOn: [11]
+    dependsOn: [12]
   },
 ];
 
