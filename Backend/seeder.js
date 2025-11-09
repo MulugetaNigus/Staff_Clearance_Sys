@@ -56,7 +56,7 @@ const mockUsers = [
     email: 'head.cs@woldia.edu',
     password: 'head.cs123',
     name: 'CS Department Head',
-    role: 'AcademicDepartmentReviewer',
+    role: 'DepartmentReviewer',
     department: 'Computer Science',
     contactInfo: 'head.cs@woldia.edu',
     avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
@@ -143,6 +143,15 @@ const mockUsers = [
     avatar: 'https://randomuser.me/api/portraits/men/9.jpg',
   },
   {
+    email: 'propertyexec@woldia.edu',
+    password: 'propertyexec123',
+    name: 'Property Executive Director',
+    role: 'PropertyExecutiveDirectorReviewer',
+    department: 'Property Management',
+    contactInfo: 'propertyexec@woldia.edu',
+    avatar: 'https://randomuser.me/api/portraits/men/27.jpg',
+  },
+  {
     email: 'store1@woldia.edu',
     password: 'store1123',
     name: 'Store 1 Officer',
@@ -188,6 +197,15 @@ const mockUsers = [
     avatar: 'https://randomuser.me/api/portraits/men/14.jpg',
   },
   {
+    email: 'internalauditexec@woldia.edu',
+    password: 'internalaudit123',
+    name: 'Internal Audit Executive Director',
+    role: 'InternalAuditExecutiveDirectorReviewer',
+    department: 'Internal Audit',
+    contactInfo: 'internalauditexec@woldia.edu',
+    avatar: 'https://randomuser.me/api/portraits/men/29.jpg',
+  },
+  {
     email: 'finance@woldia.edu',
     password: 'finance123',
     name: 'Finance Executive',
@@ -204,6 +222,15 @@ const mockUsers = [
     department: 'Finance',
     contactInfo: 'seniorfinance@woldia.edu',
     avatar: 'https://randomuser.me/api/portraits/men/16.jpg',
+  },
+  {
+    email: 'seniorfinancespec@woldia.edu',
+    password: 'seniorfinspec123',
+    name: 'Senior Finance Specialist Reviewer',
+    role: 'SeniorFinanceSpecialistReviewer',
+    department: 'Finance',
+    contactInfo: 'seniorfinancespec@woldia.edu',
+    avatar: 'https://randomuser.me/api/portraits/men/28.jpg',
   },
   {
     email: 'treasurer@woldia.edu',
@@ -233,6 +260,15 @@ const mockUsers = [
     avatar: 'https://randomuser.me/api/portraits/men/19.jpg',
   },
   {
+    email: 'ictexecutive@woldia.edu',
+    password: 'ictexec123',
+    name: 'ICT Executive Reviewer',
+    role: 'ICTExecutiveReviewer',
+    department: 'ICT Services',
+    contactInfo: 'ictexecutive@woldia.edu',
+    avatar: 'https://randomuser.me/api/portraits/men/26.jpg',
+  },
+  {
     email: 'community@woldia.edu',
     password: 'community123',
     name: 'Community Engagement Dir',
@@ -258,6 +294,15 @@ const mockUsers = [
     department: 'Records & Archives',
     contactInfo: 'archives@woldia.edu',
     avatar: 'https://randomuser.me/api/portraits/men/22.jpg',
+  },
+  {
+    email: 'recordsarchivesofficer@woldia.edu',
+    password: 'recordsarchives123',
+    name: 'Records & Archives Officer Reviewer',
+    role: 'RecordsArchivesOfficerReviewer',
+    department: 'Records & Archives',
+    contactInfo: 'recordsarchivesofficer@woldia.edu',
+    avatar: 'https://randomuser.me/api/portraits/men/31.jpg',
   },
   {
     email: 'facilities@woldia.edu',
@@ -286,6 +331,15 @@ const mockUsers = [
     contactInfo: 'hrdev@woldia.edu',
     avatar: 'https://randomuser.me/api/portraits/men/25.jpg',
   },
+  {
+    email: 'hrcompetency@woldia.edu',
+    password: 'hrcompetency123',
+    name: 'HR Competency Development TL',
+    role: 'HRCompetencyDevelopmentReviewer',
+    department: 'HR Development',
+    contactInfo: 'hrcompetency@woldia.edu',
+    avatar: 'https://randomuser.me/api/portraits/men/30.jpg',
+  },
 ];
 
 const seedDatabase = async () => {
@@ -296,9 +350,18 @@ const seedDatabase = async () => {
     await User.deleteMany({});
     console.log('Existing users cleared.');
 
-    // Insert mock users
-    await User.insertMany(mockUsers);
-    console.log('Mock users have been inserted.');
+    // Create users one by one to ensure pre-save middleware runs (password hashing)
+    console.log('Creating users with hashed passwords...');
+    const createdUsers = [];
+    for (const userData of mockUsers) {
+      try {
+        const user = await User.create(userData);
+        createdUsers.push(user);
+      } catch (error) {
+        console.error(`Error creating user ${userData.email}:`, error.message);
+      }
+    }
+    console.log(`✅ Successfully created ${createdUsers.length} users with hashed passwords.`);
 
     console.log('Database seeded successfully!');
   } catch (error) {

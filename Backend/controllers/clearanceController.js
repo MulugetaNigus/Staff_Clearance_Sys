@@ -402,11 +402,9 @@ const getMyReviewSteps = asyncHandler(async (req, res, next) => {
       });
     }
     
-    // Find steps assigned to the current user's role that are available for processing
+    // Find all steps assigned to the current user's role (regardless of status)
     const steps = await ClearanceStep.find({
       reviewerRole: userRole,
-      status: { $in: ['available', 'pending'] },
-      canProcess: true,
       hiddenFor: { $ne: req.user._id }
     })
       .populate({

@@ -31,12 +31,18 @@ const USER_ROLES = [
   'TreasurerReviewer',
   'EthicsReviewer',
   'ICTReviewer',
+  'ICTExecutiveReviewer',
   'CommunityEngagementReviewer',
   'HRManagementReviewer',
   'RecordsArchivesReviewer',
+  'RecordsArchivesOfficerReviewer',
   'FacilitiesReviewer',
   'CaseExecutiveReviewer',
-  'HRDevelopmentReviewer'
+  'HRDevelopmentReviewer',
+  'HRCompetencyDevelopmentReviewer',
+  'PropertyExecutiveDirectorReviewer',
+  'SeniorFinanceSpecialistReviewer',
+  'InternalAuditExecutiveDirectorReviewer'
 ];
 
 const userSchema = new mongoose.Schema(
