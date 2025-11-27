@@ -134,9 +134,14 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       let yPos = 0;
 
       // --- HEADER SECTION ---
-      // Deep Blue Header Background
-      doc.setFillColor(10, 40, 90); // Deep Blue
-      doc.rect(0, 0, pageWidth, 40, 'F');
+      // Light Header Background (White/Very Light Gray)
+      doc.setFillColor(252, 252, 252);
+      doc.rect(0, 0, pageWidth, 45, 'F');
+
+      // Decorative Top Line (University Blue)
+      doc.setDrawColor(10, 40, 90);
+      doc.setLineWidth(2);
+      doc.line(0, 0, pageWidth, 0);
 
       // University Logo - Load dynamically
       try {
@@ -144,36 +149,51 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
         const logoPath = path.join(__dirname, '../../src/assets/logo.jpeg');
         if (fs.existsSync(logoPath)) {
           const logoBase64 = fs.readFileSync(logoPath, { encoding: 'base64' });
-          doc.addImage(`data:image/jpeg;base64,${logoBase64}`, 'JPEG', margin, 5, 30, 30);
+          doc.addImage(`data:image/jpeg;base64,${logoBase64}`, 'JPEG', margin, 5, 35, 35);
         } else {
           console.warn('Logo file not found at:', logoPath);
-          // Fallback placeholder (White circle)
-          doc.setFillColor(255, 255, 255);
-          doc.circle(margin + 15, 20, 15, 'F');
+          // Fallback placeholder
+          doc.setDrawColor(200, 200, 200);
+          doc.circle(margin + 17, 22, 17, 'S');
           doc.setFontSize(8);
-          doc.setTextColor(10, 40, 90);
-          doc.text('LOGO', margin + 15, 22, { align: 'center' });
+          doc.setTextColor(100, 100, 100);
+          doc.text('LOGO', margin + 17, 24, { align: 'center' });
         }
       } catch (logoError) {
         console.warn('Error loading logo:', logoError.message);
       }
 
       // Header Text
-      doc.setTextColor(255, 255, 255);
+      // University Name - Deep Blue, Bold, Spaced
+      doc.setTextColor(10, 40, 90); // Deep Blue
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(22);
-      doc.text('WOLDIA UNIVERSITY', pageWidth / 2, 18, { align: 'center' });
+      doc.setFontSize(24);
+      doc.text('WOLDIA UNIVERSITY', pageWidth / 2, 15, { align: 'center' });
 
-      doc.setFontSize(12);
+      // Office Name - Dark Gray, Elegant
+      doc.setTextColor(80, 80, 80);
       doc.setFont('helvetica', 'normal');
-      doc.text('OFFICE OF THE REGISTRAR', pageWidth / 2, 26, { align: 'center' });
+      doc.setFontSize(12);
+      doc.text('OFFICE OF THE REGISTRAR', pageWidth / 2, 22, { align: 'center' });
 
-      doc.setFontSize(16);
+      // Certificate Title - Attractive Design
+      doc.setDrawColor(218, 165, 32); // Goldenrod
+      doc.setLineWidth(0.5);
+      doc.line(pageWidth / 2 - 40, 26, pageWidth / 2 + 40, 26); // Decorative line above
+
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 215, 0); // Gold color
-      doc.text('STAFF CLEARANCE CERTIFICATE', pageWidth / 2, 36, { align: 'center' });
+      doc.setTextColor(184, 134, 11); // Dark Goldenrod
+      doc.text('STAFF CLEARANCE CERTIFICATE', pageWidth / 2, 34, { align: 'center' });
 
-      yPos = 55;
+      doc.line(pageWidth / 2 - 40, 38, pageWidth / 2 + 40, 38); // Decorative line below
+
+      // Header Bottom Border
+      doc.setDrawColor(230, 230, 230);
+      doc.setLineWidth(0.5);
+      doc.line(margin, 45, pageWidth - margin, 45);
+
+      yPos = 60;
 
       // --- WATERMARK ---
       doc.saveGraphicsState();
@@ -314,9 +334,9 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
         yPos += rowHeight;
       });
 
-      // --- FOOTER & VERIFICATION ---
+      // --- FOOTER & VERIFICATION SECTION ---
       // Ensure we are at the bottom
-      const footerHeight = 40;
+      const footerHeight = 50;
       if (yPos < pageHeight - footerHeight - margin) {
         yPos = pageHeight - footerHeight - margin;
       } else {
@@ -326,7 +346,12 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
         }
       }
 
-      // QR Code
+      // Verification Box Background
+      doc.setDrawColor(200, 200, 200);
+      doc.setFillColor(248, 250, 252); // Very light blue-gray
+      doc.roundedRect(margin, yPos, pageWidth - (2 * margin), 45, 3, 3, 'FD');
+
+      // QR Code Section (Left)
       const baseUrl = process.env.FRONTEND_URL || 'https://clearance.wldu.edu.et';
       const verificationUrl = `${baseUrl}/verify/${referenceCode}`;
 
@@ -337,37 +362,54 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
           url: verificationUrl
         }), { errorCorrectionLevel: 'H', width: 100 });
 
-        doc.addImage(qrCodeDataURL, 'PNG', margin, pageHeight - 45, 30, 30);
+        // White background for QR code
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(margin + 5, yPos + 5, 35, 35, 2, 2, 'F');
+        doc.addImage(qrCodeDataURL, 'PNG', margin + 7.5, yPos + 7.5, 30, 30);
       } catch (e) {
         // Fallback
       }
 
-      // Warning / Verification Text
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Scan to Verify Authenticity', margin + 15, pageHeight - 12, { align: 'center' });
+      // Vertical Divider
+      doc.setDrawColor(220, 220, 220);
+      doc.line(margin + 45, yPos + 5, margin + 45, yPos + 40);
 
-      // Right side footer info
-      const footerTextX = margin + 40;
-      doc.setFontSize(9);
-      doc.setTextColor(50, 50, 50);
+      // Verification Text (Right)
+      const textStartX = margin + 50;
+
+      // Title
+      doc.setFontSize(11);
+      doc.setTextColor(10, 40, 90); // Deep Blue
       doc.setFont('helvetica', 'bold');
-      doc.text('OFFICIAL DOCUMENT', footerTextX, pageHeight - 40);
+      doc.text('OFFICIAL DIGITAL VERIFICATION', textStartX, yPos + 10);
 
+      // Instructions
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
       doc.setFont('helvetica', 'normal');
+      doc.text('Scan the QR code to verify the authenticity of this document.', textStartX, yPos + 16);
+      doc.text('The digital record serves as the primary source of truth.', textStartX, yPos + 21);
+
+      // Validity Warning
       doc.setFontSize(8);
-      doc.text('This document certifies that the above-named staff member has successfully', footerTextX, pageHeight - 35);
-      doc.text('completed all clearance requirements as per university regulations.', footerTextX, pageHeight - 31);
+      doc.setTextColor(200, 0, 0); // Red
+      doc.setFont('helvetica', 'bold');
+      doc.text('WARNING: Any alteration or modification renders this certificate invalid.', textStartX, yPos + 30);
 
-      doc.setTextColor(200, 0, 0);
-      doc.text('Any alteration renders this certificate invalid.', footerTextX, pageHeight - 25);
-
-      // Bottom Banner
-      doc.setFillColor(245, 245, 245);
-      doc.rect(0, pageHeight - 10, pageWidth, 10, 'F');
-      doc.setTextColor(150, 150, 150);
+      // Certification Statement
       doc.setFontSize(7);
-      doc.text(`Generated ID: ${referenceCode} | ${new Date().toISOString()}`, pageWidth / 2, pageHeight - 4, { align: 'center' });
+      doc.setTextColor(100, 100, 100);
+      doc.setFont('helvetica', 'italic');
+      doc.text('This document certifies that the staff member has completed all university clearance requirements.', textStartX, yPos + 38);
+
+      // Bottom Banner (Full Width)
+      doc.setFillColor(10, 40, 90); // Deep Blue
+      doc.rect(0, pageHeight - 8, pageWidth, 8, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`System Generated: ${referenceCode} | ${new Date().toISOString()}`, pageWidth / 2, pageHeight - 3, { align: 'center' });
 
       pdfBuffer = doc.output('arraybuffer');
     } catch (pdfError) {
