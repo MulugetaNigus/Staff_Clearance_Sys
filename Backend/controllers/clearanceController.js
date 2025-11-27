@@ -96,7 +96,7 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
 
   const request = await ClearanceRequest.findById(requestId);
   console.log(`Request found in database: ${request ? 'YES' : 'NO'}`);
-  
+
   if (!request) {
     // Let's check if any requests exist with similar IDs
     const allRequests = await ClearanceRequest.find({}).select('_id referenceCode initiatedBy').populate('initiatedBy', 'name');
@@ -114,11 +114,11 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
   // Update the VP initial step
   const vpInitialStep = await ClearanceStep.findOneAndUpdate(
     { requestId, reviewerRole: 'AcademicVicePresident', order: 1 },
-    { 
-      status: 'cleared', 
-      reviewedBy: userId, 
+    {
+      status: 'cleared',
+      reviewedBy: userId,
       signature,
-      lastUpdatedAt: new Date() 
+      lastUpdatedAt: new Date()
     },
     { new: true }
   );
@@ -269,7 +269,7 @@ const getRequestsForVP = asyncHandler(async (req, res, next) => {
   if (req.user.role !== 'AcademicVicePresident') {
     return next(new AppError('Only Academic Vice President can access VP requests', 403));
   }
-  
+
   try {
     // Get requests that need initial VP approval or final VP approval
     const initialApprovalRequests = await ClearanceRequest.find({
@@ -277,7 +277,7 @@ const getRequestsForVP = asyncHandler(async (req, res, next) => {
     })
       .populate('initiatedBy', 'name email department')
       .sort({ createdAt: -1 });
-    
+
     const finalApprovalRequests = await ClearanceRequest.find({
       status: 'in_progress',
       vpInitialSignature: { $exists: true },
@@ -285,20 +285,20 @@ const getRequestsForVP = asyncHandler(async (req, res, next) => {
     })
       .populate('initiatedBy', 'name email department')
       .sort({ createdAt: -1 });
-    
+
     // Check if final approval requests actually have all other steps completed
     const validFinalApprovalRequests = [];
     for (const request of finalApprovalRequests) {
       const allSteps = await ClearanceStep.find({ requestId: request._id });
       const vpFinalStep = allSteps.find(step => step.reviewerRole === 'AcademicVicePresident' && step.vpSignatureType === 'final');
-      
+
       if (vpFinalStep && vpFinalStep.canProcess) {
         validFinalApprovalRequests.push(request);
       }
     }
-    
+
     const allRequests = [...initialApprovalRequests, ...validFinalApprovalRequests];
-    
+
     // Debug logging
     console.log('VP REQUESTS DEBUG:');
     console.log(`Initial approval requests: ${initialApprovalRequests.length}`);
@@ -306,7 +306,7 @@ const getRequestsForVP = asyncHandler(async (req, res, next) => {
     allRequests.forEach(req => {
       console.log(`- Request ID: ${req._id}, Status: ${req.status}, Initiated By: ${req.initiatedBy.name}`);
     });
-    
+
     res.status(200).json({
       success: true,
       data: allRequests,
@@ -318,13 +318,13 @@ const getRequestsForVP = asyncHandler(async (req, res, next) => {
 
 const getClearanceRequests = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
-  
+
   try {
     const requests = await ClearanceRequest.find({ initiatedBy: userId })
       .populate('initiatedBy', 'name email')
       .populate('reviewedBy', 'name email')
       .sort({ createdAt: -1 });
-    
+
     res.status(200).json({
       success: true,
       data: requests,
@@ -337,26 +337,26 @@ const getClearanceRequests = asyncHandler(async (req, res, next) => {
 const getClearanceRequestById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const userId = req.user._id;
-  
+
   try {
     const request = await ClearanceRequest.findById(id)
       .populate('initiatedBy', 'name email')
       .populate('reviewedBy', 'name email');
-    
+
     if (!request) {
       return next(new AppError('Clearance request not found', 404));
     }
-    
+
     // Check if user has permission to view this request
     if (request.initiatedBy._id.toString() !== userId.toString() && !req.user.role.includes('Reviewer') && req.user.role !== 'SystemAdmin') {
       return next(new AppError('You do not have permission to view this request', 403));
     }
-    
+
     // Get all steps for this request
     const steps = await ClearanceStep.find({ requestId: id })
       .populate('reviewedBy', 'name email')
       .sort({ order: 1 });
-    
+
     res.status(200).json({
       success: true,
       data: { ...request.toObject(), steps },
@@ -368,18 +368,18 @@ const getClearanceRequestById = asyncHandler(async (req, res, next) => {
 
 const getMyReviewSteps = asyncHandler(async (req, res, next) => {
   const userRole = req.user.role;
-  
+
   try {
     // Debug logging for Department Head and College Head
     if (userRole === 'DepartmentHeadReviewer' || userRole === 'DepartmentReviewer' || userRole.includes('Department')) {
       console.log('DEPARTMENT HEAD DEBUG:');
       console.log(`User: ${req.user.name} (${userRole})`);
-      
+
       // Check all steps for this role
       const allSteps = await ClearanceStep.find({ reviewerRole: userRole })
         .populate('requestId', 'referenceCode status vpInitialSignature')
         .sort({ createdAt: -1 });
-      
+
       console.log(`Total steps for ${userRole}: ${allSteps.length}`);
       allSteps.forEach(step => {
         console.log(`- Step ID: ${step._id}, Order: ${step.order}, Status: ${step.status}, CanProcess: ${step.canProcess}, Request: ${step.requestId?.referenceCode}, Request Status: ${step.requestId?.status}, VP Initial: ${!!step.requestId?.vpInitialSignature}`);
@@ -390,22 +390,23 @@ const getMyReviewSteps = asyncHandler(async (req, res, next) => {
     if (userRole === 'CollegeHeadReviewer' || userRole === 'CollegeReviewer' || userRole.includes('College')) {
       console.log('COLLEGE HEAD DEBUG:');
       console.log(`User: ${req.user.name} (${userRole})`);
-      
+
       // Check all steps for this role
       const allSteps = await ClearanceStep.find({ reviewerRole: userRole })
         .populate('requestId', 'referenceCode status vpInitialSignature')
         .sort({ createdAt: -1 });
-      
+
       console.log(`Total steps for ${userRole}: ${allSteps.length}`);
       allSteps.forEach(step => {
         console.log(`- Step ID: ${step._id}, Order: ${step.order}, Status: ${step.status}, CanProcess: ${step.canProcess}, Request: ${step.requestId?.referenceCode}, Request Status: ${step.requestId?.status}, VP Initial: ${!!step.requestId?.vpInitialSignature}`);
       });
     }
-    
-    // Find all steps assigned to the current user's role (regardless of status)
+
+    // Find all steps assigned to the current user's role (excluding pending steps)
     const steps = await ClearanceStep.find({
       reviewerRole: userRole,
-      hiddenFor: { $ne: req.user._id }
+      hiddenFor: { $ne: req.user._id },
+      status: { $ne: 'pending' } // Only show steps that are available, cleared, or have issues
     })
       .populate({
         path: 'requestId',
@@ -415,7 +416,7 @@ const getMyReviewSteps = asyncHandler(async (req, res, next) => {
         }
       })
       .sort({ 'requestId.createdAt': -1, order: 1 });
-    
+
     res.status(200).json({
       success: true,
       data: steps,
@@ -428,25 +429,25 @@ const getMyReviewSteps = asyncHandler(async (req, res, next) => {
 const hideClearanceStep = asyncHandler(async (req, res, next) => {
   const { stepId } = req.params;
   const userId = req.user._id;
-  
+
   try {
     const step = await ClearanceStep.findById(stepId);
     if (!step) {
       return next(new AppError('Clearance step not found', 404));
     }
-    
+
     // Add user to hiddenFor array if not already present
     if (!step.hiddenFor.includes(userId)) {
       step.hiddenFor.push(userId);
       await step.save();
     }
-    
+
     await ActivityLog.create({
       userId,
       action: 'STEP_HIDDEN',
       description: `Hidden clearance step for ${step.department}`,
     });
-    
+
     res.status(200).json({
       success: true,
       message: 'Step hidden successfully',
@@ -458,25 +459,25 @@ const hideClearanceStep = asyncHandler(async (req, res, next) => {
 
 const verifyClearanceRequest = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  
+
   try {
     const request = await ClearanceRequest.findById(id)
       .populate('initiatedBy', 'name email department')
       .select('-__v');
-    
+
     if (!request) {
       return res.status(404).json({
         success: false,
         message: 'Clearance request not found',
       });
     }
-    
+
     // Get all steps for verification
     const steps = await ClearanceStep.find({ requestId: id })
       .populate('reviewedBy', 'name email')
       .sort({ order: 1 })
       .select('-__v');
-    
+
     // Public verification data (no sensitive information)
     const verificationData = {
       referenceCode: request.referenceCode,
@@ -491,7 +492,7 @@ const verifyClearanceRequest = asyncHandler(async (req, res, next) => {
       totalSteps: steps.length,
       isValid: request.status === 'cleared' || request.status === 'archived',
     };
-    
+
     res.status(200).json({
       success: true,
       data: verificationData,
@@ -504,15 +505,15 @@ const verifyClearanceRequest = asyncHandler(async (req, res, next) => {
 // Helper function to update workflow step availability based on dependencies
 const updateWorkflowAvailability = async (requestId) => {
   const allSteps = await ClearanceStep.find({ requestId }).sort({ order: 1 });
-  
+
   for (const step of allSteps) {
     if (step.status === 'cleared') {
       continue; // Skip already cleared steps
     }
-    
+
     // Check if all dependencies are met
     const dependenciesMet = await checkDependencies(step, allSteps);
-    
+
     if (dependenciesMet && !step.canProcess) {
       step.canProcess = true;
       step.status = 'available';
@@ -530,17 +531,17 @@ const checkDependencies = async (step, allSteps) => {
   if (!step.dependsOn || step.dependsOn.length === 0) {
     return true; // No dependencies
   }
-  
+
   // Check if all dependent steps are cleared
   for (const dependentOrder of step.dependsOn) {
     const dependentSteps = allSteps.filter(s => s.order === dependentOrder);
     const allCleared = dependentSteps.every(s => s.status === 'cleared');
-    
+
     if (!allCleared) {
       return false;
     }
   }
-  
+
   return true;
 };
 
@@ -551,7 +552,7 @@ const handleInterdependentSteps = async (requestId, reviewerRole, userId, signat
     isInterdependent: true,
     interdependentWith: { $in: [reviewerRole] }
   });
-  
+
   // Update the current step
   const currentStep = interdependentSteps.find(step => step.reviewerRole === reviewerRole);
   if (currentStep) {
@@ -563,12 +564,12 @@ const handleInterdependentSteps = async (requestId, reviewerRole, userId, signat
     currentStep.lastUpdatedAt = new Date();
     await currentStep.save();
   }
-  
+
   // Check if all interdependent steps are now cleared
-  const allInterdependentCleared = interdependentSteps.every(step => 
+  const allInterdependentCleared = interdependentSteps.every(step =>
     step.status === 'cleared' || step.reviewerRole === reviewerRole
   );
-  
+
   if (allInterdependentCleared) {
     // Update all interdependent steps to cleared if not already
     for (const step of interdependentSteps) {
@@ -585,14 +586,14 @@ const handleInterdependentSteps = async (requestId, reviewerRole, userId, signat
 const checkAndCompleteRequest = async (requestId) => {
   const allSteps = await ClearanceStep.find({ requestId });
   const allCleared = allSteps.every(step => step.status === 'cleared');
-  
+
   if (allCleared) {
     const request = await ClearanceRequest.findById(requestId);
     if (request && request.status !== 'cleared') {
       request.status = 'cleared';
       request.completedAt = new Date();
       await request.save();
-      
+
       await ActivityLog.create({
         userId: request.initiatedBy,
         action: 'REQUEST_COMPLETED',
@@ -622,7 +623,7 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
   const vpFinalStep = await ClearanceStep.findOne({
     requestId,
     reviewerRole: 'AcademicVicePresident',
-    order: 11,
+    // Removed hardcoded order check to be more robust, or updated to 12
     vpSignatureType: 'final'
   });
 
@@ -682,7 +683,7 @@ const archiveRequest = asyncHandler(async (req, res, next) => {
   const archiveStep = await ClearanceStep.findOne({
     requestId,
     reviewerRole: 'RecordsArchivesReviewer',
-    order: 12
+    order: 13
   });
 
   if (!archiveStep || !archiveStep.canProcess) {
@@ -742,6 +743,36 @@ const fixRoleNames = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Get all cleared requests for Academic Staff (Admin only)
+const getClearedAcademicStaffRequests = asyncHandler(async (req, res, next) => {
+  // Verify user is System Admin
+  if (req.user.role !== 'SystemAdmin') {
+    return next(new AppError('Only System Administrators can access this data', 403));
+  }
+
+  try {
+    // Find all cleared requests
+    const clearedRequests = await ClearanceRequest.find({
+      status: 'cleared'
+    })
+      .populate('initiatedBy', 'name email department staffId role')
+      .sort({ completedAt: -1 });
+
+    // Filter for Academic Staff only
+    const academicStaffRequests = clearedRequests.filter(req =>
+      req.initiatedBy && req.initiatedBy.role === 'AcademicStaff'
+    );
+
+    res.status(200).json({
+      success: true,
+      count: academicStaffRequests.length,
+      data: academicStaffRequests
+    });
+  } catch (error) {
+    return next(new AppError('Failed to fetch cleared academic staff requests', 500));
+  }
+});
+
 module.exports = {
   createClearanceRequest,
   approveInitialRequest,
@@ -759,4 +790,5 @@ module.exports = {
   handleInterdependentSteps,
   checkAndCompleteRequest,
   fixRoleNames,
+  getClearedAcademicStaffRequests
 };

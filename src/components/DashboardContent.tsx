@@ -17,6 +17,8 @@ import { Users, FileText, Clock, CheckCircle2, Rocket, BarChart3, UserPlus, Sett
 import { StatCard as UIStatCard } from './ui/Card';
 import ReportsDashboard from './ReportsDashboard';
 import ProfileSettings from './ProfileSettings';
+import DownloadCertificate from './DownloadCertificate';
+import AdminCertificateManager from './AdminCertificateManager';
 
 interface DashboardContentProps {
   activeTab: string;
@@ -43,6 +45,7 @@ const QuickActions: React.FC<{ role: string; setActiveTab: (tab: string) => void
         { title: 'Create User', icon: UserPlus, action: () => setActiveTab('create-users'), color: 'from-emerald-500 to-emerald-600' },
         { title: 'System Settings', icon: Settings, action: () => setActiveTab('settings'), color: 'from-purple-500 to-purple-600' },
         { title: 'View Reports', icon: TrendingUp, action: () => setActiveTab('reports'), color: 'from-amber-500 to-amber-600' },
+        { title: 'Staff Certificates', icon: FileText, action: () => setActiveTab('admin-certificates'), color: 'from-cyan-500 to-cyan-600' },
       ];
     } else if (role.includes('Reviewer')) {
       return [
@@ -361,6 +364,10 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
       return <ReportsDashboard />;
     case 'settings':
       return <ProfileSettings />;
+    case 'download-certificate':
+      return <DownloadCertificate />;
+    case 'admin-certificates':
+      return <AdminCertificateManager />;
     default:
       return <DashboardOverviewComponent setActiveTab={setActiveTab} />;
   }

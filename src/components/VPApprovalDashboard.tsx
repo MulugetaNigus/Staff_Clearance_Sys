@@ -6,7 +6,7 @@ import { toastUtils } from '../utils/toastUtils';
 import type { ClearanceRequest } from '../types/clearance';
 import { FaFilePdf, FaFileImage, FaDownload, FaEye, FaTimes } from 'react-icons/fa';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://staffclearancesys.onrender.com';
 
 const getFileIcon = (fileName: string) => {
   if (fileName.endsWith('.pdf')) return <FaFilePdf className="text-red-500 text-3xl" />;
@@ -32,14 +32,14 @@ const VPApprovalDashboard: React.FC = () => {
         const response = await clearanceService.getRequestsForVP();
         if (response.success) {
           // Separate requests by VP approval type
-          const initial = response.data.filter((req: ClearanceRequest) => 
+          const initial = response.data.filter((req: ClearanceRequest) =>
             req.status === 'initiated'
           );
           const final = response.data.filter((req: ClearanceRequest) => {
             // Requests ready for final VP approval (all departments completed except final VP step)
             return req.status === 'in_progress' && req.vpInitialSignature && !req.vpFinalSignature;
           });
-          
+
           setInitialApprovalRequests(initial);
           setFinalApprovalRequests(final);
         } else {
@@ -91,13 +91,13 @@ const VPApprovalDashboard: React.FC = () => {
     if (signingRequestId && signingType) {
       setApprovalInitiated(true);
       console.log(`${signingType} signature for request`, signingRequestId, signature);
-      
+
       if (signingType === 'initial') {
         await handleInitialApproval(signingRequestId, signature);
       } else {
         await handleFinalApproval(signingRequestId, signature);
       }
-      
+
       setIsSignatureModalOpen(false);
       setSigningRequestId(null);
       setSigningType('initial');
@@ -114,26 +114,24 @@ const VPApprovalDashboard: React.FC = () => {
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6">
         <h1 className="text-3xl font-bold text-gray-900">Enhanced VP Approval Dashboard</h1>
         <p className="text-gray-600 mt-2">Manage both initial validation and final oversight approvals.</p>
-        
+
         {/* Tab Navigation */}
         <div className="mt-6 flex space-x-1 bg-white rounded-lg p-1 shadow-sm">
           <button
             onClick={() => setActiveTab('initial')}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'initial'
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'initial'
                 ? 'bg-blue-500 text-white shadow-sm'
                 : 'text-gray-700 hover:bg-gray-100'
-            }`}
+              }`}
           >
             Initial Validation ({initialApprovalRequests.length})
           </button>
           <button
             onClick={() => setActiveTab('final')}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'final'
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'final'
                 ? 'bg-purple-500 text-white shadow-sm'
                 : 'text-gray-700 hover:bg-gray-100'
-            }`}
+              }`}
           >
             Final Oversight ({finalApprovalRequests.length})
           </button>
@@ -153,90 +151,90 @@ const VPApprovalDashboard: React.FC = () => {
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
               <h3 className="font-semibold text-blue-800 mb-2">Stage 1: Initial Validation</h3>
               <p className="text-sm text-blue-700">
-                Your first signature validates that this is a legitimate clearance request and authorizes it to move forward. 
+                Your first signature validates that this is a legitimate clearance request and authorizes it to move forward.
                 This acts as a "green light" for the clearance process to officially start.
               </p>
             </div>
             {initialApprovalRequests.map((request) => (
               <div key={request._id} className="bg-white rounded-3xl shadow-xl border border-blue-200 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
-              <div className="p-7 flex-grow">
-                <div className="grid md:grid-cols-3 gap-6">
-                  {/* Request Info */}
-                  <div className="md:col-span-2">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-1">{request.initiatedBy.name}</h3>
-                        <p className="text-sm text-gray-500">ID: {request.referenceCode}</p>
+                <div className="p-7 flex-grow">
+                  <div className="grid md:grid-cols-3 gap-6">
+                    {/* Request Info */}
+                    <div className="md:col-span-2">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="text-2xl font-bold text-gray-900 mb-1">{request.initiatedBy.name}</h3>
+                          <p className="text-sm text-gray-500">ID: {request.referenceCode}</p>
+                        </div>
+                        <span className={`px-4 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800`}>
+                          {request.status.replace('_', ' ').toUpperCase()}
+                        </span>
                       </div>
-                      <span className={`px-4 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800`}>
-                        {request.status.replace('_', ' ').toUpperCase()}
-                      </span>
+                      <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+                        <p><strong>Purpose:</strong> {request.purpose}</p>
+                        <p><strong>Department:</strong> {request.formData.department}</p>
+                        <p><strong>Teacher ID:</strong> {request.formData.teacherId}</p>
+                        <p><strong>Submitted:</strong> {new Date(request.createdAt).toLocaleString()}</p>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                      <p><strong>Purpose:</strong> {request.purpose}</p>
-                      <p><strong>Department:</strong> {request.formData.department}</p>
-                      <p><strong>Teacher ID:</strong> {request.formData.teacherId}</p>
-                      <p><strong>Submitted:</strong> {new Date(request.createdAt).toLocaleString()}</p>
+
+                    {/* Uploaded Files */}
+                    <div className="md:col-span-1">
+                      <h4 className="text-lg font-semibold text-gray-800 mb-3">Uploaded Files</h4>
+                      {request.uploadedFiles.length > 0 ? (
+                        <ul className="space-y-3">
+                          {request.uploadedFiles
+                            .filter(file => {
+                              const userRole = user?.role;
+                              if (!userRole) return false;
+
+                              if (userRole === 'AcademicVicePresident') {
+                                return file.visibility === 'vp' || file.visibility === 'all';
+                              }
+                              // For other roles, only show files marked as 'all'
+                              return file.visibility === 'all';
+                            })
+                            .map(file => (
+                              <li key={file._id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <div className="flex items-center space-x-3 overflow-hidden">
+                                  {getFileIcon(file.fileName)}
+                                  <span className="text-sm font-medium text-gray-800 truncate">{file.fileName}</span>
+                                </div>
+                                <div className="flex items-center space-x-2 flex-shrink-0">
+                                  <a href={`${API_BASE_URL}/${file.filePath}`} download target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600">
+                                    <FaDownload />
+                                  </a>
+                                  <button onClick={() => setPreviewFile(`${API_BASE_URL}/${file.filePath}`)} className="p-2 text-gray-500 hover:text-green-600">
+                                    <FaEye />
+                                  </button>
+                                </div>
+                              </li>
+                            ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500">No files uploaded.</p>
+                      )}
                     </div>
-                  </div>
-
-                  {/* Uploaded Files */}
-                  <div className="md:col-span-1">
-                    <h4 className="text-lg font-semibold text-gray-800 mb-3">Uploaded Files</h4>
-                    {request.uploadedFiles.length > 0 ? (
-                      <ul className="space-y-3">
-                        {request.uploadedFiles
-                          .filter(file => {
-                            const userRole = user?.role;
-                            if (!userRole) return false;
-
-                            if (userRole === 'AcademicVicePresident') {
-                              return file.visibility === 'vp' || file.visibility === 'all';
-                            }
-                            // For other roles, only show files marked as 'all'
-                            return file.visibility === 'all';
-                          })
-                          .map(file => (
-                          <li key={file._id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
-                            <div className="flex items-center space-x-3 overflow-hidden">
-                              {getFileIcon(file.fileName)}
-                              <span className="text-sm font-medium text-gray-800 truncate">{file.fileName}</span>
-                            </div>
-                            <div className="flex items-center space-x-2 flex-shrink-0">
-                              <a href={`${API_BASE_URL}/${file.filePath}`} download target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600">
-                                <FaDownload />
-                              </a>
-                              <button onClick={() => setPreviewFile(`${API_BASE_URL}/${file.filePath}`)} className="p-2 text-gray-500 hover:text-green-600">
-                                <FaEye />
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-gray-500">No files uploaded.</p>
-                    )}
                   </div>
                 </div>
-              </div>
 
-              {/* Actions for Initial Approval */}
-              <div className="p-6 bg-blue-50 border-t border-blue-100 flex justify-end space-x-4">
-                <button onClick={() => {
+                {/* Actions for Initial Approval */}
+                <div className="p-6 bg-blue-50 border-t border-blue-100 flex justify-end space-x-4">
+                  <button onClick={() => {
                     setSigningRequestId(request._id);
                     setSigningType('initial');
                     setIsSignatureModalOpen(true);
                   }}
-                  disabled={approvalInitiated || isSignatureModalOpen}
-                  className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2">
+                    disabled={approvalInitiated || isSignatureModalOpen}
+                    className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2">
                     <span>✓</span>
                     <span>Validate & Authorize</span>
                   </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )) : (
+            ))}
+          </div>
+        )) : (
         finalApprovalRequests.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">🏁</div>
@@ -248,7 +246,7 @@ const VPApprovalDashboard: React.FC = () => {
             <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
               <h3 className="font-semibold text-purple-800 mb-2">Stage 5: Final Oversight</h3>
               <p className="text-sm text-purple-700">
-                Your second signature occurs after all other departments have signed, confirming that the staff 
+                Your second signature occurs after all other departments have signed, confirming that the staff
                 member has been fully cleared through all required stages.
               </p>
             </div>
@@ -304,15 +302,15 @@ const VPApprovalDashboard: React.FC = () => {
                 {/* Actions for Final Approval */}
                 <div className="p-6 bg-purple-50 border-t border-purple-100 flex justify-end space-x-4">
                   <button onClick={() => {
-                      setSigningRequestId(request._id);
-                      setSigningType('final');
-                      setIsSignatureModalOpen(true);
-                    }}
+                    setSigningRequestId(request._id);
+                    setSigningType('final');
+                    setIsSignatureModalOpen(true);
+                  }}
                     disabled={approvalInitiated || isSignatureModalOpen}
                     className="px-6 py-2 text-sm font-medium bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 flex items-center space-x-2">
-                      <span>🏁</span>
-                      <span>Provide Final Oversight</span>
-                    </button>
+                    <span>🏁</span>
+                    <span>Provide Final Oversight</span>
+                  </button>
                 </div>
               </div>
             ))}

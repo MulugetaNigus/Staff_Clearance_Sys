@@ -14,7 +14,7 @@ export interface User {
   mustChangePassword: boolean; // Added mustChangePassword field
 }
 
-export type UserRole = 
+export type UserRole =
   | 'AcademicStaff'
   | 'SystemAdmin'
   | 'AcademicVicePresident'
@@ -186,7 +186,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'LOGIN_START' });
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://staffclearancesys.onrender.com/api'}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -207,7 +207,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Store token in localStorage for future requests
         localStorage.setItem('authToken', data.data.token);
         localStorage.setItem('user', JSON.stringify(data.data.user));
-        
+
         dispatch({ type: 'LOGIN_SUCCESS', payload: data.data.user });
         return { mustChangePassword: data.data.user.mustChangePassword };
       } else {
@@ -223,7 +223,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Remove token from localStorage
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
-    
+
     dispatch({ type: 'LOGOUT' });
     toastUtils.auth.logoutSuccess();
   };

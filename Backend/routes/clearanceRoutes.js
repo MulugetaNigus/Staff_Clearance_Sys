@@ -15,10 +15,14 @@ const {
   getMyReviewSteps,
   hideClearanceStep,
   fixRoleNames,
+  getClearedAcademicStaffRequests,
 } = require('../controllers/clearanceController');
 
 // New route for reviewers to get their assigned steps
 router.route('/steps/my-reviews').get(protect, getMyReviewSteps);
+
+// Admin route to get cleared academic staff requests
+router.route('/requests/cleared-academic-staff').get(protect, authorize('SystemAdmin'), getClearedAcademicStaffRequests);
 
 // Existing Routes...
 router.route('/requests').post(protect, uploadClearanceFiles, createClearanceRequest);

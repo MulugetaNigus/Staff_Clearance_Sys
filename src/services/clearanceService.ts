@@ -66,8 +66,13 @@ export const clearanceService = {
     return response.data;
   },
 
-  verifyClearanceRequest: async (id: string) => {
-    const response = await axios.get(`http://localhost:5000/verify/${id}`);
+  verifyClearanceRequest: async (referenceCode: string) => {
+    const response = await API.get(`/certificate/verify/${referenceCode}`);
+    return response.data;
+  },
+
+  getClearedAcademicStaffRequests: async () => {
+    const response = await API.get('/clearance/requests/cleared-academic-staff');
     return response.data;
   },
 };
