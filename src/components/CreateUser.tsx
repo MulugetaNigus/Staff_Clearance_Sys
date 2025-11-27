@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { userService, type CreateUserData } from '../services/userService';
 import { toastUtils } from '../utils/toastUtils';
 import { emailService } from '../services/emailService';
+import Input from './ui/Input';
+import Button from './ui/Button';
+import Card from './ui/Card';
+import { User, Mail, Phone, Briefcase, Shield } from 'lucide-react';
 
 const USER_ROLES = [
   { value: 'AcademicStaff', label: 'Academic Staff' },
@@ -38,6 +42,13 @@ const USER_ROLES = [
   { value: 'HRDevelopmentReviewer', label: 'HR Development Reviewer' },
 ];
 
+interface ValidationErrors {
+  name?: string;
+  email?: string;
+  department?: string;
+  contactInfo?: string;
+}
+
 const CreateUser: React.FC = () => {
   const [newUser, setNewUser] = useState<CreateUserData>({
     name: '',
@@ -47,18 +58,115 @@ const CreateUser: React.FC = () => {
     contactInfo: '',
   });
 
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Validation functions
+  const validateName = (name: string): string | undefined => {
+    if (!name.trim()) {
+      return 'Full name is required';
+    }
+    if (name.trim().length < 3) {
+      return 'Name must be at least 3 characters long';
+    }
+    if (name.trim().length > 100) {
+      return 'Name must not exceed 100 characters';
+    }
+    if (!/^[a-zA-Z\s'-]+$/.test(name)) {
+      return 'Name can only contain letters, spaces, hyphens, and apostrophes';
+    }
+    const nameParts = name.trim().split(/\s+/);
+    if (nameParts.length < 2) {
+      return 'Please enter both first and last name';
+    }
+    return undefined;
+  };
+
+  const validateEmail = (email: string): string | undefined => {
+    if (!email.trim()) {
+      return 'Email address is required';
+    }
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      return 'Please enter a valid email address (e.g., john@example.com)';
+    }
+    if (email.length > 255) {
+      return 'Email must not exceed 255 characters';
+    }
+    return undefined;
+  };
+
+  const validateDepartment = (department: string): string | undefined => {
+    if (!department.trim()) {
+      return 'Department is required';
+    }
+    if (department.trim().length < 2) {
+      return 'Department name must be at least 2 characters long';
+    }
+    if (department.trim().length > 100) {
+      return 'Department name must not exceed 100 characters';
+    }
+    return undefined;
+  };
+
+  const validateContactInfo = (contactInfo: string): string | undefined => {
+    if (!contactInfo.trim()) {
+      return 'Contact information is required';
+    }
+    // Ethiopian phone number format: +251 9XX XXX XXX or 09XX XXX XXX
+    const phoneRegex = /^(\+251|0)?9\d{8}$/;
+    const cleanedPhone = contactInfo.replace(/[\s-]/g, '');
+
+    if (!phoneRegex.test(cleanedPhone)) {
+      return 'Please enter a valid Ethiopian phone number (e.g., +251911234567 or 0911234567)';
+    }
+    return undefined;
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: ValidationErrors = {};
+
+    newErrors.name = validateName(newUser.name);
+    newErrors.email = validateEmail(newUser.email);
+    newErrors.department = validateDepartment(newUser.department);
+    newErrors.contactInfo = validateContactInfo(newUser.contactInfo);
+
+    setErrors(newErrors);
+
+    // Return true if no errors
+    return !Object.values(newErrors).some(error => error !== undefined);
+  };
+
+  const handleFieldChange = (field: keyof CreateUserData, value: string) => {
+    setNewUser({ ...newUser, [field]: value });
+
+    // Clear error for this field when user starts typing
+    if (errors[field as keyof ValidationErrors]) {
+      setErrors({ ...errors, [field]: undefined });
+    }
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate form
+    if (!validateForm()) {
+      toastUtils.error('Please fix the validation errors before submitting');
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
       const loadingToast = toastUtils.loading('Creating user...');
-      
+
       // Create user via API
       const response = await userService.createUser(newUser);
-      
+
       if (response.success && response.data) {
         toastUtils.dismiss(loadingToast);
         toastUtils.success('User created successfully!');
-        
+
         // Send welcome email with credentials
         try {
           const emailResult = await emailService.sendUserCreationEmail({
@@ -69,7 +177,7 @@ const CreateUser: React.FC = () => {
             role: newUser.role,
             department: newUser.department,
           });
-          
+
           if (emailResult.success) {
             toastUtils.success('Welcome email sent successfully!');
           } else {
@@ -80,9 +188,10 @@ const CreateUser: React.FC = () => {
           console.error('Email service error:', emailError);
           toastUtils.warning('User created but email notification failed to send.');
         }
-        
+
         // Reset form
         setNewUser({ name: '', email: '', role: 'AcademicStaff', department: '', contactInfo: '' });
+        setErrors({});
       } else {
         toastUtils.dismiss(loadingToast);
         toastUtils.error(response.message || 'Failed to create user');
@@ -90,93 +199,111 @@ const CreateUser: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to create user:', error);
       toastUtils.error(error.response?.data?.message || error.message || 'Failed to create user');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const handleReset = () => {
+    setNewUser({ name: '', email: '', role: 'AcademicStaff', department: '', contactInfo: '' });
+    setErrors({});
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl shadow-lg p-6 border-t-4 border-green-600">
-        <h1 className="text-3xl font-bold text-gray-800">Create New User</h1>
-        <p className="text-gray-500 mt-1">Fill in the details to create a new user.</p>
+    <div className="space-y-6 animate-fade-in">
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 border border-green-200">
+        <h1 className="text-3xl font-bold text-gray-900 font-['Plus_Jakarta_Sans_Variable']">Create New User</h1>
+        <p className="text-gray-600 mt-1">Fill in the details to create a new user account.</p>
       </div>
-      <form onSubmit={handleCreateUser} className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-            <input
-              type="text"
+
+      <Card className="p-6">
+        <form onSubmit={handleCreateUser} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Full Name */}
+            <Input
+              label="Full Name"
+              icon={User}
               value={newUser.name}
-              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+              onChange={(e) => handleFieldChange('name', e.target.value)}
+              placeholder="Enter full name (e.g., John Doe)"
+              error={errors.name}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter full name"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-            <input
+
+            {/* Email Address */}
+            <Input
               type="email"
+              label="Email Address"
+              icon={Mail}
               value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              onChange={(e) => handleFieldChange('email', e.target.value)}
+              placeholder="Enter email (e.g., john@example.com)"
+              error={errors.email}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter email address"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
-            <input
-              type="text"
+
+            {/* Department */}
+            <Input
+              label="Department"
+              icon={Briefcase}
               value={newUser.department}
-              onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
+              onChange={(e) => handleFieldChange('department', e.target.value)}
+              placeholder="Enter department name"
+              error={errors.department}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter department"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Contact Information</label>
-            <input
-              type="text"
+
+            {/* Contact Information */}
+            <Input
+              label="Contact Number"
+              icon={Phone}
               value={newUser.contactInfo}
-              onChange={(e) => setNewUser({ ...newUser, contactInfo: e.target.value })}
+              onChange={(e) => handleFieldChange('contactInfo', e.target.value)}
+              placeholder="+251911234567 or 0911234567"
+              error={errors.contactInfo}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter contact information"
+              helperText="Ethiopian phone number format"
             />
+
+            {/* Role */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Shield className="inline h-4 w-4 mr-1 text-gray-500" />
+                Role
+              </label>
+              <select
+                value={newUser.role}
+                onChange={(e) => handleFieldChange('role', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all duration-200"
+              >
+                {USER_ROLES.map(role => (
+                  <option key={role.value} value={role.value}>{role.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-            <select
-              value={newUser.role}
-              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+
+          <div className="flex justify-end gap-4 pt-4 border-t border-gray-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleReset}
+              disabled={isSubmitting}
             >
-              {USER_ROLES.map(role => (
-                <option key={role.value} value={role.value}>{role.label}</option>
-              ))}
-            </select>
+              Reset
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={isSubmitting}
+            >
+              Create User
+            </Button>
           </div>
-        </div>
-        <div className="flex justify-end space-x-4">
-          <button
-            type="reset"
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors duration-200"
-            onClick={() => setNewUser({ name: '', email: '', role: 'AcademicStaff', department: '', contactInfo: '' })}
-          >
-            Reset
-          </button>
-          <button
-            type="submit"
-            className="bg-gradient-to-r from-green-500 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-blue-700 transition-all duration-200 shadow-lg"
-          >
-            Create User
-          </button>
-        </div>
-      </form>
+        </form>
+      </Card>
     </div>
   );
 };
 
 export default CreateUser;
-

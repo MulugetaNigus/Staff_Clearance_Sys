@@ -9,50 +9,52 @@ import HRPendingRequestsDashboard from './HRPendingRequestsDashboard';
 import UserManagement from './UserManagement';
 import CreateUser from './CreateUser';
 import EmptyState from './EmptyState';
-import {clearanceService} from '../services/clearanceService';
+import { clearanceService } from '../services/clearanceService';
 import { toastUtils } from '../utils/toastUtils';
 import type { ClearanceStep } from '../types/clearance';
 import { dashboardService } from '../services/dashboardService';
+import { Users, FileText, Clock, CheckCircle2, Rocket, BarChart3, UserPlus, Settings, TrendingUp, Edit, Hash } from 'lucide-react';
+import { StatCard as UIStatCard } from './ui/Card';
+import ReportsDashboard from './ReportsDashboard';
+import ProfileSettings from './ProfileSettings';
 
 interface DashboardContentProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
 
-const StatCard: React.FC<{ title: string; value: string | number; icon: string; color: string }> = ({ title, value, icon, color }) => (
-  <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-gray-500">{title}</p>
-        <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
-      </div>
-      <div className={`w-16 h-16 ${color} rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg`}>
-        {icon}
-      </div>
-    </div>
-  </div>
-);
+// Legacy StatCard wrapper using new UI component
+const StatCard: React.FC<{ title: string; value: string | number; icon: React.FC<{ className?: string }>; color: string }> = ({ title, value, icon, color }) => {
+  const variantMap: any = {
+    'bg-gradient-to-r from-blue-500 to-blue-600': 'blue',
+    'bg-gradient-to-r from-green-500 to-green-600': 'emerald',
+    'bg-gradient-to-r from-yellow-500 to-yellow-600': 'amber',
+    'bg-gradient-to-r from-purple-500 to-purple-600': 'purple',
+  };
+
+  return <UIStatCard title={title} value={value} icon={icon} variant={variantMap[color] || 'blue'} />;
+};
 
 const QuickActions: React.FC<{ role: string; setActiveTab: (tab: string) => void }> = ({ role, setActiveTab }) => {
   const getActionsForRole = () => {
     if (role === 'SystemAdmin') {
       return [
-        { title: 'User Management', icon: '👥', action: () => setActiveTab('user-management'), color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
-        { title: 'Create User', icon: '➕', action: () => setActiveTab('create-users'), color: 'bg-gradient-to-r from-green-500 to-green-600' },
-        { title: 'System Settings', icon: '⚙️', action: () => setActiveTab('settings'), color: 'bg-gradient-to-r from-purple-500 to-purple-600' },
-        { title: 'View Reports', icon: '📈', action: () => setActiveTab('reports'), color: 'bg-gradient-to-r from-orange-500 to-orange-600' },
+        { title: 'User Management', icon: Users, action: () => setActiveTab('user-management'), color: 'from-blue-500 to-blue-600' },
+        { title: 'Create User', icon: UserPlus, action: () => setActiveTab('create-users'), color: 'from-emerald-500 to-emerald-600' },
+        { title: 'System Settings', icon: Settings, action: () => setActiveTab('settings'), color: 'from-purple-500 to-purple-600' },
+        { title: 'View Reports', icon: TrendingUp, action: () => setActiveTab('reports'), color: 'from-amber-500 to-amber-600' },
       ];
     } else if (role.includes('Reviewer')) {
       return [
-        { title: 'Pending Reviews', icon: '📋', action: () => setActiveTab('pending-reviews'), color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
-        { title: 'Update Profile', icon: '📝', action: () => setActiveTab('profile'), color: 'bg-gradient-to-r from-purple-500 to-purple-600' },
+        { title: 'Pending Reviews', icon: FileText, action: () => setActiveTab('pending-reviews'), color: 'from-blue-500 to-blue-600' },
+        { title: 'Update Profile', icon: Edit, action: () => setActiveTab('profile'), color: 'from-purple-500 to-purple-600' },
       ];
     } else { // Default to 'User' role
       return [
-        { title: 'Start Clearance', icon: '🚀', action: () => setActiveTab('clearance'), color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
-        { title: 'Track Progress', icon: '📊', action: () => setActiveTab('track-clearance'), color: 'bg-gradient-to-r from-green-500 to-green-600' },
-        { title: 'Update Profile', icon: '📝', action: () => setActiveTab('profile'), color: 'bg-gradient-to-r from-purple-500 to-purple-600' },
-        { title: 'Download Certificate', icon: '📋', action: () => setActiveTab('download-certificate'), color: 'bg-gradient-to-r from-orange-500 to-orange-600' },
+        { title: 'Start Clearance', icon: Rocket, action: () => setActiveTab('clearance'), color: 'from-blue-500 to-blue-600' },
+        { title: 'Track Progress', icon: BarChart3, action: () => setActiveTab('track-clearance'), color: 'from-emerald-500 to-emerald-600' },
+        { title: 'Update Profile', icon: Edit, action: () => setActiveTab('profile'), color: 'from-purple-500 to-purple-600' },
+        { title: 'Download Certificate', icon: FileText, action: () => setActiveTab('download-certificate'), color: 'from-amber-500 to-amber-600' },
       ];
     }
   };
@@ -61,14 +63,25 @@ const QuickActions: React.FC<{ role: string; setActiveTab: (tab: string) => void
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-      <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
+      <h3 className="text-xl font-semibold text-gray-900 mb-6 font-['Plus_Jakarta_Sans_Variable']">Quick Actions</h3>
       <div className="space-y-3">
-        {actions.map((action, index) => (
-          <button key={index} onClick={action.action} className={`w-full p-4 ${action.color} text-white rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg hover:shadow-xl`}>
-            <div className="text-2xl mb-2">{action.icon}</div>
-            <p className="font-medium">{action.title}</p>
-          </button>
-        ))}
+        {actions.map((action, index) => {
+          const Icon = action.icon;
+          return (
+            <button
+              key={index}
+              onClick={action.action}
+              className={`group w-full p-4 bg-gradient-to-r ${action.color} text-white rounded-xl hover:shadow-xl hover:scale-[1.02] transform transition-all duration-200 shadow-lg`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors duration-200">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <p className="font-medium text-left">{action.title}</p>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -78,9 +91,13 @@ const DashboardOverviewComponent: React.FC<{ setActiveTab: (tab: string) => void
   const { user } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
         const response = await dashboardService.getDashboardData();
         if (response.success) {
@@ -88,6 +105,9 @@ const DashboardOverviewComponent: React.FC<{ setActiveTab: (tab: string) => void
         }
       } catch (error) {
         console.error('Failed to fetch dashboard data', error);
+        setError('Failed to load dashboard statistics');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -95,7 +115,7 @@ const DashboardOverviewComponent: React.FC<{ setActiveTab: (tab: string) => void
       try {
         const response = await dashboardService.getRecentActivity();
         if (response.success) {
-          setRecentActivity(response.data);
+          setRecentActivity(response.data || []);
         }
       } catch (error) {
         console.error('Failed to fetch recent activity', error);
@@ -104,39 +124,82 @@ const DashboardOverviewComponent: React.FC<{ setActiveTab: (tab: string) => void
 
     fetchDashboardData();
     fetchRecentActivity();
-  }, []);
+  }, [user]);
 
   const getStatsForRole = () => {
     if (!stats) return [];
 
     if (user?.role === 'SystemAdmin') {
       return [
-        { title: 'Total Users', value: stats.totalUsers, icon: '👥', color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
-        { title: 'Total Clearance Requests', value: stats.totalClearanceRequests, icon: '📝', color: 'bg-gradient-to-r from-green-500 to-green-600' },
-        { title: 'Pending Clearances', value: stats.pendingClearances, icon: '⏳', color: 'bg-gradient-to-r from-yellow-500 to-yellow-600' },
-        { title: 'Completed Clearances', value: stats.completedClearances, icon: '✅', color: 'bg-gradient-to-r from-purple-500 to-purple-600' },
+        { title: 'Total Users', value: stats.totalUsers || 0, icon: Users, color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
+        { title: 'Total Clearance Requests', value: stats.totalClearanceRequests || 0, icon: FileText, color: 'bg-gradient-to-r from-green-500 to-green-600' },
+        { title: 'Pending Clearances', value: stats.pendingClearances || 0, icon: Clock, color: 'bg-gradient-to-r from-yellow-500 to-yellow-600' },
+        { title: 'Completed Clearances', value: stats.completedClearances || 0, icon: CheckCircle2, color: 'bg-gradient-to-r from-purple-500 to-purple-600' },
+      ];
+    } else if (user?.role === 'AcademicVicePresident') {
+      return [
+        { title: 'Initial Approvals Pending', value: stats.vpInitialPending || 0, icon: Clock, color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
+        { title: 'Final Approvals Pending', value: stats.vpFinalPending || 0, icon: Clock, color: 'bg-gradient-to-r from-amber-500 to-amber-600' },
+        { title: 'Total Approved', value: stats.totalApproved || 0, icon: CheckCircle2, color: 'bg-gradient-to-r from-green-500 to-green-600' },
       ];
     } else if (user?.role.includes('Reviewer')) {
       return [
-        { title: 'Assigned Reviews', value: stats.assignedReviews, icon: '📋', color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
-        { title: 'Completed Reviews', value: stats.completedReviews, icon: '✅', color: 'bg-gradient-to-r from-green-500 to-green-600' },
+        { title: 'Pending Reviews', value: stats.pendingReviews || 0, icon: Clock, color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
+        { title: 'Assigned Reviews', value: stats.assignedReviews || 0, icon: FileText, color: 'bg-gradient-to-r from-amber-500 to-amber-600' },
+        { title: 'Completed Reviews', value: stats.completedReviews || 0, icon: CheckCircle2, color: 'bg-gradient-to-r from-green-500 to-green-600' },
       ];
     } else {
+      // Academic Staff
+      const statusDisplay = stats.myRequestStatus === 'none' ? 'No Request' :
+        stats.myRequestStatus === 'cleared' ? 'Cleared' :
+          stats.myRequestStatus === 'rejected' ? 'Rejected' :
+            stats.myRequestStatus === 'initiated' ? 'Initiated' :
+              stats.myRequestStatus === 'in_progress' ? 'In Progress' :
+                stats.myRequestStatus || 'Unknown';
+
       return [
-        { title: 'Clearance Status', value: stats.myRequestStatus, icon: '📊', color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
-        { title: 'Total Steps', value: stats.totalSteps, icon: '#️⃣', color: 'bg-gradient-to-r from-yellow-500 to-yellow-600' },
-        { title: 'Approved Steps', value: stats.approvedSteps, icon: '✅', color: 'bg-gradient-to-r from-green-500 to-green-600' },
+        { title: 'Clearance Status', value: statusDisplay, icon: BarChart3, color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
+        { title: 'Total Steps', value: stats.totalSteps || 0, icon: Hash, color: 'bg-gradient-to-r from-yellow-500 to-yellow-600' },
+        { title: 'Approved Steps', value: stats.approvedSteps || 0, icon: CheckCircle2, color: 'bg-gradient-to-r from-green-500 to-green-600' },
       ];
     }
   };
 
   const dashboardStats = getStatsForRole();
 
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-white rounded-2xl shadow-lg p-6 animate-pulse">
+              <div className="h-20 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+        <p className="text-red-600 font-medium">{error}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
-        <p className="text-gray-600 mt-2">Here's what's happening with your projects today.</p>
+    <div className="space-y-8 animate-fade-in">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
+        <h1 className="text-3xl font-bold text-gray-900 font-['Plus_Jakarta_Sans_Variable']">Welcome back, {user?.name}!</h1>
+        <p className="text-gray-600 mt-2">Here's what's happening with your clearance system today.</p>
         <div className="flex items-center mt-4 space-x-4">
           <div className="bg-white rounded-lg px-4 py-2 shadow-md">
             <span className="text-sm text-gray-500">Today</span>
@@ -144,12 +207,15 @@ const DashboardOverviewComponent: React.FC<{ setActiveTab: (tab: string) => void
           </div>
           <div className="bg-white rounded-lg px-4 py-2 shadow-md">
             <span className="text-sm text-gray-500">Status</span>
-            <p className="text-lg font-semibold text-green-600">All Systems Operational</p>
+            <p className="text-lg font-semibold text-green-600 flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              All Systems Operational
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {dashboardStats.map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
@@ -157,16 +223,31 @@ const DashboardOverviewComponent: React.FC<{ setActiveTab: (tab: string) => void
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-6 font-['Plus_Jakarta_Sans_Variable']">Recent Activity</h3>
           <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div key={activity._id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900">{activity.description}</p>
-                  <p className="text-xs text-gray-500">{new Date(activity.createdAt).toLocaleString()}</p>
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity) => (
+                <div key={activity._id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">{activity.description}</p>
+                    {activity.details && (
+                      <p className="text-xs text-gray-500 mt-1">{activity.details}</p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">{new Date(activity.createdAt).toLocaleString()}</p>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">No recent activity</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -277,9 +358,9 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
     case 'create-users':
       return <CreateUser />;
     case 'reports':
-      return <GenericContent title="Reports" icon="📈" />;
+      return <ReportsDashboard />;
     case 'settings':
-      return <GenericContent title="Settings" icon="⚙️" />;
+      return <ProfileSettings />;
     default:
       return <DashboardOverviewComponent setActiveTab={setActiveTab} />;
   }

@@ -8,9 +8,9 @@ exports.createUser = async (req, res) => {
 
   try {
     if (!name || !email || !role || !department || !contactInfo) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'All fields are required (name, email, role, department, contactInfo)' 
+        message: 'All fields are required (name, email, role, department, contactInfo)'
       });
     }
 
@@ -45,9 +45,9 @@ exports.createUser = async (req, res) => {
     // Log credentials for email sending
     console.log(`User created successfully: ${email} with username: ${username} and password: ${password}`);
 
-    res.status(201).json({ 
+    res.status(201).json({
       success: true,
-      message: 'User created successfully', 
+      message: 'User created successfully',
       data: {
         user: {
           id: newUser._id,
@@ -75,7 +75,7 @@ exports.createUser = async (req, res) => {
         message: `User with this ${field} already exists`
       });
     }
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error while creating user',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
@@ -104,7 +104,8 @@ exports.login = async (req, res) => {
 // Get all users (Admin only)
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    // Exclude the requesting user (admin) from the list
+    const users = await User.find({ _id: { $ne: req.user.id } });
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });

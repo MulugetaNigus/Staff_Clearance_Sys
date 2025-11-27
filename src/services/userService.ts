@@ -85,7 +85,7 @@ export const userService = {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
+
       if (response.data) {
         return response.data;
       } else {
@@ -106,6 +106,26 @@ export const userService = {
     }
   },
 
+  updateProfile: async (data: Partial<User>) => {
+    try {
+      const response = await API.put(`/users/${data.id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  },
+
+  changePassword: async (data: any) => {
+    try {
+      const response = await API.post('/users/change-password', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error changing password:', error);
+      throw error;
+    }
+  },
+
   deleteUser: async (userId: string): Promise<boolean> => {
     try {
       await API.delete(`/users/${userId}`);
@@ -118,21 +138,21 @@ export const userService = {
 
   resetUserPassword: async (userId: string): Promise<{ success: boolean; newPassword?: string }> => {
     try {
-        const response = await API.post(`/users/${userId}/reset-password`);
-        return { ...response.data, success: true };
+      const response = await API.post(`/users/${userId}/reset-password`);
+      return { ...response.data, success: true };
     } catch (error) {
-        console.error(`Failed to reset password for user ${userId}:`, error);
-        return { success: false };
+      console.error(`Failed to reset password for user ${userId}:`, error);
+      return { success: false };
     }
   },
 
   toggleUserStatus: async (userId: string): Promise<{ success: boolean; message?: string }> => {
     try {
-        const response = await API.patch(`/users/${userId}/toggle-status`);
-        return { ...response.data, success: true };
+      const response = await API.patch(`/users/${userId}/toggle-status`);
+      return { ...response.data, success: true };
     } catch (error) {
-        console.error(`Failed to toggle status for user ${userId}:`, error);
-        return { success: false };
+      console.error(`Failed to toggle status for user ${userId}:`, error);
+      return { success: false };
     }
   },
 

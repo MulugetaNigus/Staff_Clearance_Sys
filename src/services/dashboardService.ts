@@ -20,4 +20,13 @@ export const dashboardService = {
       throw error;
     }
   },
+  getReportStats: async () => {
+    try {
+      const response = await API.get('/dashboard/reports');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching report stats:', error);
+      throw error;
+    }
+  },
 };

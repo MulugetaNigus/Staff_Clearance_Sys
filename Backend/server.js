@@ -16,6 +16,7 @@ const publicRoutes = require('./routes/publicRoutes');
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
 const notFound = require('./middleware/notFound');
+const { apiLimiter, loginLimiter, uploadLimiter, passwordResetLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,13 +26,15 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+const maxFileSize = process.env.MAX_FILE_SIZE || 5242880; // 5MB default
+const fileSizeLimit = `${Math.ceil(maxFileSize / 1024 / 1024)}mb`;
+app.use(express.json({ limit: fileSizeLimit }));
+app.use(express.urlencoded({ extended: true, limit: fileSizeLimit }));
 
 // Custom request logger
 app.use((req, res, next) => {
@@ -50,13 +53,6 @@ if (process.env.NODE_ENV !== 'production') {
 // Import database configuration
 const connectDB = require('../Backend/config/connectDB');
 connectDB();
-// const { connectToDatabase, setupConnectionHandlers } = require('./config/connectDB');
-
-// Setup connection event handlers
-// setupConnectionHandlers();
-
-// Connect to MongoDB
-// connectToDatabase();
 
 // Health check route
 app.get('/health', (req, res) => {
@@ -68,7 +64,13 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
+// Apply rate limiting to all API routes
+app.use('/api/', apiLimiter);
+
+// API routes with specific rate limiting
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth/forgot-password', passwordResetLimiter);
+app.use('/api/auth/reset-password', passwordResetLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/clearance', clearanceRoutes);
 app.use('/api/signatures', require('./routes/signatureRoutes'));
