@@ -1,0 +1,875 @@
+[{
+  "_id": {
+    "$oid": "6910a81888181b9d6999130a"
+  },
+  "email": "staff@woldia.edu",
+  "password": "$2a$12$WwTFiwF0uS5K8tDhNLETYeuHxhUYee0zMbV0pC3KVEbW1nnuewqdG",
+  "name": "Dr. Almaz Ayana",
+  "role": "AcademicStaff",
+  "department": "Computer Science",
+  "contactInfo": "almaz.ayana@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/women/68.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:28.953Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-27T08:27:46.752Z"
+  },
+  "__v": 0,
+  "lastLogin": {
+    "$date": "2025-11-27T08:27:46.750Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6910a81988181b9d69991310"
+  },
+  "email": "admin@woldia.edu",
+  "password": "$2a$12$emlEAcSgqhWtKt3eD5KUiOxke6p/mWpmu2T7Hl6CXfzblC1jMlNxO",
+  "name": "Admin User",
+  "role": "SystemAdmin",
+  "department": "IT Services",
+  "contactInfo": "09xxxxxx56",
+  "avatar": "https://randomuser.me/api/portraits/men/43.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:29.444Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-27T08:20:32.274Z"
+  },
+  "__v": 0,
+  "lastLogin": {
+    "$date": "2025-11-27T08:20:32.264Z"
+  },
+  "passwordResetExpires": {
+    "$date": "2025-11-27T07:22:28.869Z"
+  },
+  "passwordResetToken": "01e5e290858c3e1efb665c938b7a4041b504437b05748e3c366e66bc4a978cdd"
+},
+{
+  "_id": {
+    "$oid": "6910a81988181b9d69991312"
+  },
+  "email": "vp@woldia.edu",
+  "password": "$2a$12$.Ik8z.ma62KfyTTB6RdIPekuv61KOcfHNCqhsqef6susJNkewGS4y",
+  "name": "Academic Vice President",
+  "role": "AcademicVicePresident",
+  "department": "Academic Affairs",
+  "contactInfo": "vp.academic@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/45.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:29.856Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-26T07:07:27.508Z"
+  },
+  "__v": 0,
+  "lastLogin": {
+    "$date": "2025-11-26T07:07:27.406Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6910a81a88181b9d69991314"
+  },
+  "email": "head.cs@woldia.edu",
+  "password": "$2a$12$4cSvA3XeriHp9NpSVjMbYebEmNrE.V93G47olIaxENQyRJYG6EZ12",
+  "name": "CS Department Head",
+  "role": "DepartmentReviewer",
+  "department": "Computer Science",
+  "contactInfo": "head.cs@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/1.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:30.269Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T15:01:09.662Z"
+  },
+  "__v": 0,
+  "lastLogin": {
+    "$date": "2025-11-09T15:01:09.661Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6910a81a88181b9d69991316"
+  },
+  "email": "registrar@woldia.edu",
+  "password": "$2a$12$QLEJqUwhYcLrgMnrltgl0ebLCLuSwChMpT9PE5v1fKCGi27h/32py",
+  "name": "Registrar Reviewer",
+  "role": "RegistrarReviewer",
+  "department": "Registrar Office",
+  "contactInfo": "registrar@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/2.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:30.693Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T16:30:52.254Z"
+  },
+  "__v": 0,
+  "lastLogin": {
+    "$date": "2025-11-09T16:30:52.253Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6910a81b88181b9d69991318"
+  },
+  "email": "studentdean@woldia.edu",
+  "password": "$2a$12$Wgxhc/9tGFe0KxoZgbIkg.h82lFelFc6r5vqfUH2lfCR9rVMB6lWW",
+  "name": "Student Dean",
+  "role": "StudentDeanReviewer",
+  "department": "Student Affairs",
+  "contactInfo": "studentdean@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/3.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:31.105Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:31.105Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a81b88181b9d6999131a"
+  },
+  "email": "disted@woldia.edu",
+  "password": "$2a$12$d5hCLd3jZaHNyHj1/VN5PeqNwAqWwjK3Q0QzYrc2i3MWW7ETBLHi2",
+  "name": "Distance Ed Reviewer",
+  "role": "DistanceEducationReviewer",
+  "department": "Distance & Continuing Ed",
+  "contactInfo": "disted@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/4.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:31.520Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:31.520Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a81b88181b9d6999131c"
+  },
+  "email": "research@woldia.edu",
+  "password": "$2a$12$I2U3rpmiQqYGMY6rS8lzQuUGYRgXjt73b70QQ7C1PPOUd5dT3DUbG",
+  "name": "Research Directorate",
+  "role": "ResearchDirectorateReviewer",
+  "department": "Research Directorate",
+  "contactInfo": "research@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/5.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:31.921Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:31.921Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a81c88181b9d6999131e"
+  },
+  "email": "collegehead@woldia.edu",
+  "password": "$2a$12$5Z/eR8jf/ZzQMlpTbQgPIeBwaWkNe9cIu8T.Xx0wyi..gxvRdT9pa",
+  "name": "College Head",
+  "role": "CollegeReviewer",
+  "department": "College of Engineering",
+  "contactInfo": "collegehead@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/6.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:32.340Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T15:21:04.299Z"
+  },
+  "__v": 0,
+  "lastLogin": {
+    "$date": "2025-11-09T15:03:45.091Z"
+  },
+  "passwordResetExpires": {
+    "$date": "2025-11-09T15:31:04.298Z"
+  },
+  "passwordResetToken": "2212e4b8f51e3c40a119827647b9557f11907e9e964e9ad2b31604044fe5396f"
+},
+{
+  "_id": {
+    "$oid": "6910a81c88181b9d69991320"
+  },
+  "email": "empfinance@woldia.edu",
+  "password": "$2a$12$qAIl3OWPrzIjVKgJ72auqOUaAe5NOP4Oh31vk5C4wxLB1hIYWlhj6",
+  "name": "Employee Finance Reviewer",
+  "role": "EmployeeFinanceReviewer",
+  "department": "Employee Finance Enterprise",
+  "contactInfo": "empfinance@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/7.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:32.778Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-26T06:18:38.797Z"
+  },
+  "__v": 0,
+  "lastLogin": {
+    "$date": "2025-11-26T06:18:38.791Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6910a81d88181b9d69991322"
+  },
+  "email": "library@woldia.edu",
+  "password": "$2a$12$8gQHRB2S7X7pLWfEYGNt2u8.obVExVh2Cx/xSpPzjlMntcgL/0PNy",
+  "name": "Library Reviewer",
+  "role": "LibraryReviewer",
+  "department": "Library Services",
+  "contactInfo": "library.reviewer@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/44.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:33.185Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:33.185Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a81d88181b9d69991324"
+  },
+  "email": "genservice@woldia.edu",
+  "password": "$2a$12$bQUGJo.piFj/ec.St0QCuOZc0sG4Wa.lbS.SsmYX5wVPb5.BCqzIO",
+  "name": "General Service Exec",
+  "role": "GeneralServiceReviewer",
+  "department": "General Services",
+  "contactInfo": "genservice@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/8.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:33.590Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:33.590Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a81e88181b9d69991326"
+  },
+  "email": "propertydir@woldia.edu",
+  "password": "$2a$12$5NK5.YhbEqT84CfeZprGju4oSAKRMgm4KqBE.faEFZCZL1iFWJZgG",
+  "name": "Property Exec Director",
+  "role": "PropertyDirectorReviewer",
+  "department": "Property Management",
+  "contactInfo": "propertydir@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/9.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:34.008Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:34.008Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a81e88181b9d69991328"
+  },
+  "email": "propertyexec@woldia.edu",
+  "password": "$2a$12$cAZ6iIuAXim7PTpZXs23k.2bH9z3KFxAjMq40aurOOhZxLD14YHCu",
+  "name": "Property Executive Director",
+  "role": "PropertyExecutiveDirectorReviewer",
+  "department": "Property Management",
+  "contactInfo": "propertyexec@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/27.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:34.418Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:34.418Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a81e88181b9d6999132a"
+  },
+  "email": "store1@woldia.edu",
+  "password": "$2a$12$kqIGYIbX4XuO9lw1n.au6u66Lq/fqLBx16KPHkXJSd0xXNnJ52QEG",
+  "name": "Store 1 Officer",
+  "role": "Store1Reviewer",
+  "department": "Central Store 1",
+  "contactInfo": "store1@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/10.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:34.838Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:34.838Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a81f88181b9d6999132c"
+  },
+  "email": "store2@woldia.edu",
+  "password": "$2a$12$kGeqHzuEAYyE/DHNFYzYUurCIYtnQ5LAKJAPKa5noMv8sFydYTvTG",
+  "name": "Store 2 Officer",
+  "role": "Store2Reviewer",
+  "department": "Central Store 2",
+  "contactInfo": "store2@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/11.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:35.269Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T16:43:56.045Z"
+  },
+  "__v": 0,
+  "lastLogin": {
+    "$date": "2025-11-09T16:43:56.044Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6910a81f88181b9d6999132e"
+  },
+  "email": "propspec1@woldia.edu",
+  "password": "$2a$12$eJQLqmOVrtxQwFGuqvi/xu3RXgJd7XLzjKsrxB/Nr4CTzbYPqvZgS",
+  "name": "Property Specialist 1",
+  "role": "PropertySpecialist1Reviewer",
+  "department": "Property Management",
+  "contactInfo": "propspec1@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/12.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:35.710Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:35.710Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82088181b9d69991330"
+  },
+  "email": "propspec2@woldia.edu",
+  "password": "$2a$12$e47yuLIGBbbSx5bG1WaMHunNw5dtQAFO3zCoum6sZsyKOVxC3aGT6",
+  "name": "Property Specialist 2",
+  "role": "PropertySpecialist2Reviewer",
+  "department": "Property Management",
+  "contactInfo": "propspec2@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/13.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:36.205Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:36.205Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82088181b9d69991332"
+  },
+  "email": "audit@woldia.edu",
+  "password": "$2a$12$FdHSsMS4jVnGrfzFHNDZ0ejwd/G.lBlpqKy6NQV0lncFr9E509Ue2",
+  "name": "Internal Audit Director",
+  "role": "InternalAuditReviewer",
+  "department": "Internal Audit",
+  "contactInfo": "audit@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/14.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:36.632Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:51:36.420Z"
+  },
+  "__v": 0,
+  "lastLogin": {
+    "$date": "2025-11-09T14:51:36.420Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6910a82188181b9d69991334"
+  },
+  "email": "internalauditexec@woldia.edu",
+  "password": "$2a$12$g7JyvOOkOjSmUTT.kUVwhOk21rruPw46l7Bud9/.cCEMVbXz3HPAK",
+  "name": "Internal Audit Executive Director",
+  "role": "InternalAuditExecutiveDirectorReviewer",
+  "department": "Internal Audit",
+  "contactInfo": "internalauditexec@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/29.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:37.033Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:37.033Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82188181b9d69991336"
+  },
+  "email": "finance@woldia.edu",
+  "password": "$2a$12$WqjnIAP.MJBuQ2sDP5TOruvDXgPPdbX.zsiPi4hCG5hghOF2EEw3S",
+  "name": "Finance Executive",
+  "role": "FinanceExecutiveReviewer",
+  "department": "Finance",
+  "contactInfo": "finance@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/15.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:37.411Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:37.411Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82188181b9d69991338"
+  },
+  "email": "seniorfinance@woldia.edu",
+  "password": "$2a$12$.HtYjQTPePmGQwSLJPN/7eDr3OoYIs3wyVsDO/t4zM9X2b/w2bFau",
+  "name": "Senior Finance Specialist",
+  "role": "FinanceSpecialistReviewer",
+  "department": "Finance",
+  "contactInfo": "seniorfinance@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/16.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:37.797Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:37.797Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82288181b9d6999133a"
+  },
+  "email": "seniorfinancespec@woldia.edu",
+  "password": "$2a$12$/wMSZVDq3qGSors5AxbGP.DuBkVHfLulx1XpwtLtDMRPzQLC/MaMu",
+  "name": "Senior Finance Specialist Reviewer",
+  "role": "SeniorFinanceSpecialistReviewer",
+  "department": "Finance",
+  "contactInfo": "seniorfinancespec@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/28.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:38.211Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:38.211Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82288181b9d6999133c"
+  },
+  "email": "treasurer@woldia.edu",
+  "password": "$2a$12$3I1JnhuK.YUQ.Obs0e7YU.Q1BOLeT/M1FQrZXH7tzzZbhhempj6Ia",
+  "name": "Treasurer",
+  "role": "TreasurerReviewer",
+  "department": "Finance",
+  "contactInfo": "treasurer@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/17.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:38.737Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:38.737Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82388181b9d6999133e"
+  },
+  "email": "ethics@woldia.edu",
+  "password": "$2a$12$tUbmJwRKyEySkW7RjqQdROLb3LLKQVefhC/RaPKkoZCOKtc2UEyga",
+  "name": "Ethics Monitoring Exec",
+  "role": "EthicsReviewer",
+  "department": "Ethics & Anti-Corruption",
+  "contactInfo": "ethics@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/18.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:39.114Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:39.114Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82388181b9d69991340"
+  },
+  "email": "ict@woldia.edu",
+  "password": "$2a$12$LKC40VTi4lGCbr36RNVQmu6YD4yWKQkcPdi7RMIHfv6MgZkHuY2P6",
+  "name": "ICT Executive",
+  "role": "ICTReviewer",
+  "department": "ICT Services",
+  "contactInfo": "ict@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/19.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:39.495Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:39.495Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82388181b9d69991342"
+  },
+  "email": "ictexecutive@woldia.edu",
+  "password": "$2a$12$y63ALZHA2OLGWsT9Uu8ANO9OudU5lXnr3cyjDuEswE3pZLxJOxXKq",
+  "name": "ICT Executive Reviewer",
+  "role": "ICTExecutiveReviewer",
+  "department": "ICT Services",
+  "contactInfo": "ictexecutive@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/26.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:39.872Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:39.872Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82488181b9d69991344"
+  },
+  "email": "community@woldia.edu",
+  "password": "$2a$12$KykfchweTQvTZ0QZEBS72O1AQI9ViRmC26kHFA1PAnlI9GjT/727a",
+  "name": "Community Engagement Dir",
+  "role": "CommunityEngagementReviewer",
+  "department": "Community Engagement",
+  "contactInfo": "community@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/20.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:40.247Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:40.247Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82488181b9d69991346"
+  },
+  "email": "hr@woldia.edu",
+  "password": "$2a$12$NzYTRS8uiT4xruoajarWeek5IG0NZO1lIP1v.azVuTsFwVuhy1U.2",
+  "name": "HR Management Exec",
+  "role": "HRManagementReviewer",
+  "department": "Human Resources",
+  "contactInfo": "hr@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/21.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:40.627Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:40.627Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82588181b9d69991348"
+  },
+  "email": "archives@woldia.edu",
+  "password": "$2a$12$HaY.jnAw4adezb.2EwfAUemswgWr0PCgB1rG/AELpgQhwPHmMKxAe",
+  "name": "Records & Archives Officer",
+  "role": "RecordsArchivesReviewer",
+  "department": "Records & Archives",
+  "contactInfo": "archives@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/22.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:41.005Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:41.005Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82588181b9d6999134a"
+  },
+  "email": "recordsarchivesofficer@woldia.edu",
+  "password": "$2a$12$XNKWboVu0SkhnTHWWpIezOULCxRKuBh786q3zNyqAIvLw.hf66Fb6",
+  "name": "Records & Archives Officer Reviewer",
+  "role": "RecordsArchivesOfficerReviewer",
+  "department": "Records & Archives",
+  "contactInfo": "recordsarchivesofficer@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/31.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:41.383Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:41.383Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82588181b9d6999134c"
+  },
+  "email": "facilities@woldia.edu",
+  "password": "$2a$12$r9hXFQ6kv/G.1yAZoRS1pOsZ5qkgdCsEZ9eMf3zZwxxqciBwGYdtK",
+  "name": "Facilities Specialist",
+  "role": "FacilitiesReviewer",
+  "department": "Facilities Management",
+  "contactInfo": "facilities@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/23.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:41.769Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:41.769Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82688181b9d6999134e"
+  },
+  "email": "case@woldia.edu",
+  "password": "$2a$12$8o1Byr9GzySQmswxonrYtOzfGTAgiuVbtxaPw7eq1p3uxyF2Txe/.",
+  "name": "Case Executive",
+  "role": "CaseExecutiveReviewer",
+  "department": "Legal & Case Management",
+  "contactInfo": "case@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/24.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:42.171Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:42.171Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82688181b9d69991350"
+  },
+  "email": "hrdev@woldia.edu",
+  "password": "$2a$12$2ML21b4PT5Mf9UfWW8XxiukU6VI5x5IyrEFfo6HzWjJS.QZA1EazO",
+  "name": "HR Development TL",
+  "role": "HRDevelopmentReviewer",
+  "department": "HR Development",
+  "contactInfo": "hrdev@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/25.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:42.555Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:42.555Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6910a82688181b9d69991352"
+  },
+  "email": "hrcompetency@woldia.edu",
+  "password": "$2a$12$C7JgOPnqUkv.MkC2lUuZxuvcxoM.zO9FXh5DAkFDX/9/WBqe5GD7m",
+  "name": "HR Competency Development TL",
+  "role": "HRCompetencyDevelopmentReviewer",
+  "department": "HR Development",
+  "contactInfo": "hrcompetency@woldia.edu",
+  "avatar": "https://randomuser.me/api/portraits/men/30.jpg",
+  "isActive": true,
+  "isEmailVerified": false,
+  "loginAttempts": 0,
+  "permissions": [],
+  "mustChangePassword": false,
+  "createdAt": {
+    "$date": "2025-11-09T14:41:42.939Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-09T14:41:42.939Z"
+  },
+  "__v": 0
+}]

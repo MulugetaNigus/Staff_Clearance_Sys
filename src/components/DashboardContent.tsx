@@ -17,6 +17,7 @@ import { Users, FileText, Clock, CheckCircle2, Rocket, BarChart3, UserPlus, Sett
 import { StatCard as UIStatCard } from './ui/Card';
 import ReportsDashboard from './ReportsDashboard';
 import ProfileSettings from './ProfileSettings';
+import DownloadCertificate from './DownloadCertificate';
 
 interface DashboardContentProps {
   activeTab: string;
@@ -361,6 +362,8 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
       return <ReportsDashboard />;
     case 'settings':
       return <ProfileSettings />;
+    case 'download-certificate':
+      return <DownloadCertificate />;
     default:
       return <DashboardOverviewComponent setActiveTab={setActiveTab} />;
   }

@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require('express'); // Server entry point - forcing restart
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -12,6 +12,7 @@ const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const certificateRoutes = require('./routes/certificateRoutes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -77,6 +78,7 @@ app.use('/api/signatures', require('./routes/signatureRoutes'));
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/certificate', certificateRoutes);
 app.use('/verify', publicRoutes);
 
 // Error handling middleware

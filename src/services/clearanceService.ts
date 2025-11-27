@@ -66,8 +66,8 @@ export const clearanceService = {
     return response.data;
   },
 
-  verifyClearanceRequest: async (id: string) => {
-    const response = await axios.get(`http://localhost:5000/verify/${id}`);
+  verifyClearanceRequest: async (referenceCode: string) => {
+    const response = await API.get(`/certificate/verify/${referenceCode}`);
     return response.data;
   },
 };
