@@ -402,10 +402,11 @@ const getMyReviewSteps = asyncHandler(async (req, res, next) => {
       });
     }
 
-    // Find all steps assigned to the current user's role (regardless of status)
+    // Find all steps assigned to the current user's role (excluding pending steps)
     const steps = await ClearanceStep.find({
       reviewerRole: userRole,
-      hiddenFor: { $ne: req.user._id }
+      hiddenFor: { $ne: req.user._id },
+      status: { $ne: 'pending' } // Only show steps that are available, cleared, or have issues
     })
       .populate({
         path: 'requestId',
@@ -742,6 +743,36 @@ const fixRoleNames = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Get all cleared requests for Academic Staff (Admin only)
+const getClearedAcademicStaffRequests = asyncHandler(async (req, res, next) => {
+  // Verify user is System Admin
+  if (req.user.role !== 'SystemAdmin') {
+    return next(new AppError('Only System Administrators can access this data', 403));
+  }
+
+  try {
+    // Find all cleared requests
+    const clearedRequests = await ClearanceRequest.find({
+      status: 'cleared'
+    })
+      .populate('initiatedBy', 'name email department staffId role')
+      .sort({ completedAt: -1 });
+
+    // Filter for Academic Staff only
+    const academicStaffRequests = clearedRequests.filter(req =>
+      req.initiatedBy && req.initiatedBy.role === 'AcademicStaff'
+    );
+
+    res.status(200).json({
+      success: true,
+      count: academicStaffRequests.length,
+      data: academicStaffRequests
+    });
+  } catch (error) {
+    return next(new AppError('Failed to fetch cleared academic staff requests', 500));
+  }
+});
+
 module.exports = {
   createClearanceRequest,
   approveInitialRequest,
@@ -759,4 +790,5 @@ module.exports = {
   handleInterdependentSteps,
   checkAndCompleteRequest,
   fixRoleNames,
+  getClearedAcademicStaffRequests
 };

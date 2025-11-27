@@ -70,4 +70,9 @@ export const clearanceService = {
     const response = await API.get(`/certificate/verify/${referenceCode}`);
     return response.data;
   },
+
+  getClearedAcademicStaffRequests: async () => {
+    const response = await API.get('/clearance/requests/cleared-academic-staff');
+    return response.data;
+  },
 };

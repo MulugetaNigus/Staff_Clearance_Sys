@@ -128,7 +128,7 @@ const DownloadCertificate: React.FC = () => {
             </div>
 
             {/* Certificate Preview Info */}
-            <Card className="p-6 bg-blue-50 border-blue-200">
+            {/* <Card className="p-6 bg-blue-50 border-blue-200">
                 <div className="flex items-start gap-3">
                     <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div>
@@ -144,7 +144,7 @@ const DownloadCertificate: React.FC = () => {
                         </ul>
                     </div>
                 </div>
-            </Card>
+            </Card> */}
 
             {/* Clearance Requests List */}
             <div className="space-y-4">
@@ -236,7 +236,7 @@ const DownloadCertificate: React.FC = () => {
             </div>
 
             {/* Sample Preview Section (For Testing) */}
-            <Card className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+            {/* <Card className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
                 <div className="flex items-start gap-4">
                     <div className="p-3 bg-purple-500 rounded-lg">
                         <FileText className="h-6 w-6 text-white" />
@@ -272,7 +272,8 @@ const DownloadCertificate: React.FC = () => {
                         )}
                     </div>
                 </div>
-            </Card>
+            </Card> */}
+
         </div>
     );
 };

@@ -36,7 +36,7 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
     // Reviewers see their assigned reviews
     const assignedReviews = await ClearanceStep.countDocuments({
       reviewerRole: role,
-      status: 'pending'
+      status: { $ne: 'pending' } // Only count available, cleared, or issue steps
     });
     const completedReviews = await ClearanceStep.countDocuments({
       reviewerRole: role,
@@ -44,7 +44,7 @@ exports.getDashboardData = asyncHandler(async (req, res) => {
     });
     const pendingReviews = await ClearanceStep.countDocuments({
       reviewerRole: role,
-      status: 'pending'
+      status: 'available' // Only count steps that are ready for review
     });
 
     data = {
