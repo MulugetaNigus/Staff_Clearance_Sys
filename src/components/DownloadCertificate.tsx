@@ -58,7 +58,7 @@ const DownloadCertificate: React.FC = () => {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/certificate/${requestId}/generate`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://staffclearancesys.onrender.com/api'}/certificate/${requestId}/generate`,
                 {
                     method: 'GET',
                     headers: {

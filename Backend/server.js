@@ -27,7 +27,7 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:5173' || 'https://wldu-clearance-sys.netlify.app',
   credentials: true
 }));
 

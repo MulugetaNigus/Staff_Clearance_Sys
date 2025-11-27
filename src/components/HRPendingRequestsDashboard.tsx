@@ -6,7 +6,7 @@ import { toastUtils } from '../utils/toastUtils';
 import type { ClearanceRequest } from '../types/clearance';
 import { FaFilePdf, FaFileImage, FaDownload, FaEye, FaTimes } from 'react-icons/fa';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://staffclearancesys.onrender.com';
 
 const getFileIcon = (fileName: string) => {
   if (fileName.endsWith('.pdf')) return <FaFilePdf className="text-red-500 text-3xl" />;
@@ -150,21 +150,21 @@ const HRPendingRequestsDashboard: React.FC = () => {
                             return file.visibility === 'all';
                           })
                           .map(file => (
-                          <li key={file._id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
-                            <div className="flex items-center space-x-3 overflow-hidden">
-                              {getFileIcon(file.fileName)}
-                              <span className="text-sm font-medium text-gray-800 truncate">{file.fileName}</span>
-                            </div>
-                            <div className="flex items-center space-x-2 flex-shrink-0">
-                              <a href={`${API_BASE_URL}/${file.filePath}`} download target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600">
-                                <FaDownload />
-                              </a>
-                              <button onClick={() => setPreviewFile(`${API_BASE_URL}/${file.filePath}`)} className="p-2 text-gray-500 hover:text-green-600">
-                                <FaEye />
-                              </button>
-                            </div>
-                          </li>
-                        ))}
+                            <li key={file._id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                              <div className="flex items-center space-x-3 overflow-hidden">
+                                {getFileIcon(file.fileName)}
+                                <span className="text-sm font-medium text-gray-800 truncate">{file.fileName}</span>
+                              </div>
+                              <div className="flex items-center space-x-2 flex-shrink-0">
+                                <a href={`${API_BASE_URL}/${file.filePath}`} download target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600">
+                                  <FaDownload />
+                                </a>
+                                <button onClick={() => setPreviewFile(`${API_BASE_URL}/${file.filePath}`)} className="p-2 text-gray-500 hover:text-green-600">
+                                  <FaEye />
+                                </button>
+                              </div>
+                            </li>
+                          ))}
                       </ul>
                     ) : (
                       <p className="text-sm text-gray-500">No files uploaded.</p>
