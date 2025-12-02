@@ -303,23 +303,40 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
 
   const handleClearanceSubmit = async (formData: FormData) => {
     setIsLoading(true);
-    const loadingToast = toastUtils.loading('Submitting clearance request...');
     try {
       const response = await clearanceService.createClearanceRequest(formData);
+
       if (response.success) {
-        toastUtils.dismiss(loadingToast);
-        toastUtils.clearance.submitSuccess(response.message);
+        toastUtils.clearance.submitSuccess(response.data?.referenceCode);
         setActiveTab('track-clearance');
+        // Re-fetch clearance data after submission if user is AcademicStaff
+        if (user?.role === 'AcademicStaff') {
+          const fetchMyClearance = async () => {
+            try {
+              const response = await clearanceService.getClearanceRequests();
+              if (response.success && response.data.length > 0) {
+                const myRequest = response.data[0];
+                const stepsResponse = await clearanceService.getClearanceRequestById(myRequest._id);
+                if (stepsResponse.success) {
+                  setClearanceSteps(stepsResponse.data.steps);
+                }
+              } else {
+                setError('No active clearance request found.');
+              }
+            } catch (err) {
+              setError('Failed to fetch clearance status.');
+            }
+          };
+          fetchMyClearance();
+        }
       } else {
-        toastUtils.dismiss(loadingToast);
-        toastUtils.clearance.submitError(response.message);
+        toastUtils.clearance.submitError(response);
       }
     } catch (error: any) {
-      toastUtils.dismiss(loadingToast);
-      const errorMessage = error.message || error.error || 'Failed to submit clearance request. Please try again.';
-      toastUtils.clearance.submitError(errorMessage);
+      toastUtils.clearance.submitError(error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   switch (activeTab) {

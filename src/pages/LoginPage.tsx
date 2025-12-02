@@ -4,11 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
 import { toastUtils } from '../utils/toastUtils';
 
-// Create simple showToast helper
-const showToast = {
-  success: (msg: string) => toastUtils.success(msg),
-  error: (msg: string) => toastUtils.error(msg)
-};
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -21,13 +16,13 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
 
     if (!email || !password) {
-      showToast.error('Please enter both email and password');
+      toastUtils.form.validationError('Please enter both email and password');
       return;
     }
 
     try {
       const { mustChangePassword } = await login({ email, password });
-      showToast.success('Welcome back!');
+      toastUtils.auth.loginSuccess();
 
       if (mustChangePassword) {
         navigate('/force-change-password');
@@ -35,12 +30,8 @@ const LoginPage: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      if (err?.response?.data?.message === 'Account is deactivated. Contact support.') {
-        showToast.error('Your account is deactivated. Please contact support.');
-      } else {
-        const errorMsg = err?.response?.data?.message || 'Invalid email or password';
-        showToast.error(errorMsg);
-      }
+      // Use enhanced toast utility which handles all error types
+      toastUtils.auth.loginError(err);
     }
   };
 
@@ -63,7 +54,7 @@ const LoginPage: React.FC = () => {
               <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-xl">
                 <span className="text-3xl font-bold text-white font-['Plus_Jakarta_Sans_Variable']">WU</span>
               </div>
-              <Sparkles className="h-8 w-8 text-yellow-300 animate-pulse" />
+              {/* <Sparkles className="h-8 w-8 text-yellow-300 animate-pulse" /> */}
             </div>
 
             {/* Heading */}

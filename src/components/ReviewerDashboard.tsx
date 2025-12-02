@@ -35,7 +35,7 @@ const ReviewerDashboard: React.FC = () => {
           toastUtils.error(response.message || 'Failed to fetch review steps.');
         }
       } catch (error) {
-        toastUtils.error('An error occurred while fetching review steps.');
+        toastUtils.error(error);
       }
       setIsLoading(false);
     };
@@ -50,7 +50,7 @@ const ReviewerDashboard: React.FC = () => {
     }
 
     if (status === 'issue' && !comment.trim()) {
-      toastUtils.error('A comment is required when flagging an issue.');
+      toastUtils.form.validationError('A comment is required when flagging an issue.');
       return;
     }
 
@@ -58,15 +58,16 @@ const ReviewerDashboard: React.FC = () => {
     try {
       const response = await clearanceService.updateClearanceStep(stepId, { status, comment, signature });
       if (response.success) {
-        toastUtils.success(`Step successfully updated to ${status}.`);
+        // Use enhanced clearance toast with step department/name
+        toastUtils.clearance.stepUpdateSuccess(step?.department, status);
         setSteps(steps.map(s => s._id === stepId ? { ...s, status: status, comment: comment } : s));
         setCommentingStepId(null);
         setComment('');
       } else {
-        toastUtils.error(response.message || 'Failed to update step.');
+        toastUtils.clearance.stepUpdateError(response.message || 'Failed to update step.');
       }
     } catch (error) {
-      toastUtils.error('An error occurred while updating the step.');
+      toastUtils.clearance.stepUpdateError(error);
     } finally {
       setApprovalInitiated(false);
     }
@@ -90,13 +91,13 @@ const ReviewerDashboard: React.FC = () => {
       try {
         const response = await clearanceService.hideClearanceStep(stepId);
         if (response.success) {
-          toastUtils.success('Step successfully hidden.');
+          toastUtils.clearance.hideStepSuccess();
           setSteps(steps.filter(s => s._id !== stepId));
         } else {
-          toastUtils.error(response.message || 'Failed to hide step.');
+          toastUtils.clearance.hideStepError(response.message || 'Failed to hide step.');
         }
       } catch (error) {
-        toastUtils.error('An error occurred while hiding the step.');
+        toastUtils.clearance.hideStepError(error);
       }
     }
   };
