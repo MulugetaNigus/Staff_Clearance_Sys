@@ -192,7 +192,7 @@ const VPApprovalDashboard: React.FC = () => {
                     <div className="md:col-span-2">
                       <div className="flex items-start justify-between mb-4">
                         <div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-1">{request.initiatedBy.name}</h3>
+                          <h3 className="text-2xl font-bold text-gray-900 mb-1">{request.initiatedBy?.name || 'Unknown User'}</h3>
                           <p className="text-sm text-gray-500">ID: {request.referenceCode}</p>
                         </div>
                         <span className={`px-4 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800`}>
@@ -201,16 +201,16 @@ const VPApprovalDashboard: React.FC = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
                         <p><strong>Purpose:</strong> {request.purpose}</p>
-                        <p><strong>Department:</strong> {request.formData.department}</p>
-                        <p><strong>Teacher ID:</strong> {request.formData.teacherId}</p>
-                        <p><strong>Submitted:</strong> {new Date(request.createdAt).toLocaleString()}</p>
+                        <p><strong>Department:</strong> {request.formData?.department || 'N/A'}</p>
+                        <p><strong>Teacher ID:</strong> {request.formData?.teacherId || 'N/A'}</p>
+                        <p><strong>Submitted:</strong> {request.createdAt ? new Date(request.createdAt).toLocaleString() : 'N/A'}</p>
                       </div>
                     </div>
 
                     {/* Uploaded Files */}
                     <div className="md:col-span-1">
                       <h4 className="text-lg font-semibold text-gray-800 mb-3">Uploaded Files</h4>
-                      {request.uploadedFiles.length > 0 ? (
+                      {request.uploadedFiles && request.uploadedFiles.length > 0 ? (
                         <ul className="space-y-3">
                           {request.uploadedFiles
                             .filter(file => {

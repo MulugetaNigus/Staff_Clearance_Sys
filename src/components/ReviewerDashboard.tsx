@@ -121,11 +121,11 @@ const ReviewerDashboard: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-8">
-          {steps.map((step) => (
+          {steps.filter(step => step.requestId).map((step) => (
             <div key={step._id} className="bg-white rounded-3xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
               <div className="p-7 flex-grow">
                 {/* Staff Information Section */}
-                {step.requestId.formData && (step.requestId.formData.firstName || step.requestId.formData.lastName || step.requestId.formData.phoneNumber) && (
+                {step.requestId && step.requestId.formData && (step.requestId.formData.firstName || step.requestId.formData.lastName || step.requestId.formData.phoneNumber) && (
                   <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6 border border-blue-200">
                     <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
                       <span className="mr-2">👤</span> Staff Information
@@ -145,7 +145,7 @@ const ReviewerDashboard: React.FC = () => {
                       )}
                       {step.requestId.formData.phoneNumber && (
                         <div>
-                          <span className="text-gray-500">Phone:</span>
+                          <span className="text-gray-500">Phone Number:</span>
                           <p className="font-semibold text-gray-900">{step.requestId.formData.phoneNumber}</p>
                         </div>
                       )}
@@ -157,26 +157,33 @@ const ReviewerDashboard: React.FC = () => {
                   {/* Request Info */}
                   <div className="md:col-span-2">
                     <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-1">{step.requestId.initiatedBy.name}</h3>
-                        <p className="text-sm text-gray-500">ID: {step.requestId.referenceCode}</p>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-2xl">📄</span>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">
+                            {step.requestId?.referenceCode || 'Unknown Request'}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Submitted: {step.requestId?.createdAt ? new Date(step.requestId.createdAt).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
                       </div>
                       <span className={`px-4 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800`}>
-                        {step.requestId.status.replace('_', ' ').toUpperCase()}
+                        {step.requestId?.status?.replace('_', ' ').toUpperCase() || 'N/A'}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                      <p><strong>Purpose:</strong> {step.requestId.purpose}</p>
-                      <p><strong>Department:</strong> {step.requestId.formData.department}</p>
-                      <p><strong>Teacher ID:</strong> {step.requestId.formData.teacherId}</p>
-                      <p><strong>Submitted:</strong> {new Date(step.requestId.createdAt).toLocaleString()}</p>
+                      <p><strong>Purpose:</strong> {step.requestId?.purpose || 'N/A'}</p>
+                      <p><strong>Department:</strong> {step.requestId?.formData?.department || 'N/A'}</p>
+                      <p><strong>Teacher ID:</strong> {step.requestId?.formData?.teacherId || 'N/A'}</p>
+                      <p><strong>Submitted:</strong> {step.requestId?.createdAt ? new Date(step.requestId.createdAt).toLocaleString() : 'N/A'}</p>
                     </div>
                   </div>
 
                   {/* Uploaded Files */}
                   <div className="md:col-span-1">
                     <h4 className="text-lg font-semibold text-gray-800 mb-3">Uploaded Files</h4>
-                    {step.requestId.uploadedFiles.length > 0 ? (
+                    {step.requestId?.uploadedFiles && step.requestId.uploadedFiles.length > 0 ? (
                       <ul className="space-y-3">
                         {step.requestId.uploadedFiles
                           .filter(file => {
@@ -208,6 +215,7 @@ const ReviewerDashboard: React.FC = () => {
                     )}
                   </div>
                 </div>
+
               </div>
 
               {/* Actions */}
