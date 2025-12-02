@@ -2,6 +2,58 @@ import toast from 'react-hot-toast';
 
 // Custom toast utilities for consistent styling and messaging across the app
 
+// Helper function to extract error message from various error structures
+const extractErrorMessage = (error: any): string => {
+  // Handle axios error response
+  if (error?.response?.data?.message) {
+    return error.response.data.message;
+  }
+
+  // Handle axios error response with errors array
+  if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+    return error.response.data.errors.join(', ');
+  }
+
+  // Handle standard Error object
+  if (error?.message) {
+    return error.message;
+  }
+
+  // Handle string error
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  // Default fallback
+  return 'An unexpected error occurred.';
+};
+
+// Helper function to get HTTP status code
+const getStatusCode = (error: any): number | null => {
+  return error?.response?.status || null;
+};
+
+// Helper function to determine error type based on status code
+const getErrorType = (error: any): 'network' | 'auth' | 'validation' | 'permission' | 'notfound' | 'server' | 'unknown' => {
+  // Network error (no response at all - connection failed)
+  // Only treat as network error if there's explicitly no response AND it's a network code
+  if (error?.code === 'ERR_NETWORK' && !error?.response) {
+    return 'network';
+  }
+
+  const statusCode = getStatusCode(error);
+
+  // If we have a status code, it's an HTTP error, not a network error
+  if (statusCode) {
+    if (statusCode === 401 || statusCode === 403) return 'auth';
+    if (statusCode === 400) return 'validation';
+    if (statusCode === 404) return 'notfound';
+    if (statusCode >= 500) return 'server';
+  }
+
+  return 'unknown';
+};
+
 export const toastUtils = {
   // Success toasts
   success: (message: string, options?: any) => {
@@ -21,11 +73,20 @@ export const toastUtils = {
     });
   },
 
-  // Error toasts
+  // Error toasts - enhanced with better error extraction
   error: (error: any, options?: any) => {
-    const message = error?.response?.data?.message || error?.message || 'An unexpected error occurred.';
+    const message = extractErrorMessage(error);
+    const errorType = getErrorType(error);
+
+    // Use specific icon based on error type
+    let icon = '❌';
+    if (errorType === 'network') icon = '🌐';
+    else if (errorType === 'auth') icon = '🔒';
+    else if (errorType === 'validation') icon = '⚠️';
+    else if (errorType === 'server') icon = '🔧';
+
     return toast.error(message, {
-      icon: '❌',
+      icon,
       duration: 5000,
       style: {
         background: '#EF4444', // red-500
@@ -96,10 +157,43 @@ export const toastUtils = {
     },
 
     loginError: (error: any) => {
-      const message = error?.response?.data?.message || error?.message || 'Invalid username or password. Please try again.';
+      const errorType = getErrorType(error);
+      const statusCode = getStatusCode(error);
+      const rawMessage = extractErrorMessage(error);
+
+      // Determine specific error message
+      let message = rawMessage;
+      let icon = '🔒';
+
+      // Network error
+      if (errorType === 'network') {
+        message = 'Unable to connect to server. Please check your internet connection.';
+        icon = '🌐';
+      }
+      // Account deactivated (specific backend message)
+      else if (rawMessage.toLowerCase().includes('deactivated')) {
+        message = 'Your account has been deactivated. Please contact support for assistance.';
+        icon = '🚫';
+      }
+      // Invalid credentials
+      else if (statusCode === 401) {
+        // Keep backend message for security (don't reveal if email exists)
+        message = rawMessage;
+      }
+      // Missing fields
+      else if (statusCode === 400) {
+        message = rawMessage || 'Please provide both email and password.';
+        icon = '⚠️';
+      }
+      // Server error
+      else if (statusCode && statusCode >= 500) {
+        message = 'Server error. Please try again later.';
+        icon = '🔧';
+      }
+
       return toast.error(message, {
-        icon: '🔒',
-        duration: 4000,
+        icon,
+        duration: 5000,
         style: {
           background: '#EF4444',
           color: '#fff',
@@ -108,10 +202,23 @@ export const toastUtils = {
       });
     },
 
-    accountDeactivated: () => {
-      return toast.error('Your account is deactivated. Please contact support.', {
-        icon: '🚫',
-        duration: 5000,
+    passwordChangeSuccess: () => {
+      return toast.success('Password changed successfully!', {
+        icon: '✅',
+        duration: 3000,
+        style: {
+          background: '#10B981',
+          color: '#fff',
+          fontWeight: '500',
+        },
+      });
+    },
+
+    passwordChangeError: (error: any) => {
+      const message = extractErrorMessage(error);
+      return toast.error(message, {
+        icon: '🔒',
+        duration: 4000,
         style: {
           background: '#EF4444',
           color: '#fff',
@@ -135,8 +242,11 @@ export const toastUtils = {
 
   // Clearance related toasts
   clearance: {
-    submitSuccess: (message?: string) => {
-      return toast.success(message || 'Clearance request submitted successfully!', {
+    submitSuccess: (referenceCode?: string) => {
+      const message = referenceCode
+        ? `Clearance request ${referenceCode} submitted successfully!`
+        : 'Clearance request submitted successfully!';
+      return toast.success(message, {
         icon: '🎉',
         duration: 4000,
         style: {
@@ -147,9 +257,16 @@ export const toastUtils = {
       });
     },
 
-    submitError: (message?: string) => {
-      return toast.error(message || 'Failed to submit clearance request. Please try again.', {
-        icon: '❌',
+    submitError: (error: any) => {
+      const message = extractErrorMessage(error);
+      const errorType = getErrorType(error);
+
+      let icon = '❌';
+      if (errorType === 'network') icon = '🌐';
+      else if (errorType === 'validation') icon = '⚠️';
+
+      return toast.error(message, {
+        icon,
         duration: 6000,
         style: {
           background: '#EF4444',
@@ -159,8 +276,80 @@ export const toastUtils = {
       });
     },
 
-    approvalSuccess: () => {
-      return toast.success('Clearance step approved successfully!', {
+    stepUpdateSuccess: (stepName?: string, status?: string) => {
+      let message = 'Step updated successfully!';
+
+      if (stepName && status) {
+        const statusText = status === 'cleared' ? 'cleared' : status === 'issue' ? 'flagged' : 'updated';
+        message = `${stepName} step ${statusText} successfully!`;
+      } else if (status === 'cleared') {
+        message = 'Step cleared successfully!';
+      } else if (status === 'issue') {
+        message = 'Issue flagged successfully!';
+      }
+
+      return toast.success(message, {
+        icon: status === 'cleared' ? '✅' : status === 'issue' ? '⚠️' : '🎉',
+        duration: 3000,
+        style: {
+          background: '#10B981',
+          color: '#fff',
+          fontWeight: '500',
+        },
+      });
+    },
+
+    stepUpdateError: (error: any) => {
+      const message = extractErrorMessage(error);
+      const errorType = getErrorType(error);
+
+      // Provide more specific icons
+      let icon = '❌';
+      if (message.toLowerCase().includes('permission')) icon = '🔒';
+      else if (message.toLowerCase().includes('dependencies') || message.toLowerCase().includes('cannot be processed')) icon = '⏳';
+      else if (errorType === 'network') icon = '🌐';
+
+      return toast.error(message, {
+        icon,
+        duration: 5000,
+        style: {
+          background: '#EF4444',
+          color: '#fff',
+          fontWeight: '500',
+        },
+      });
+    },
+
+    hideStepSuccess: () => {
+      return toast.success('Step hidden from your view', {
+        icon: '👁️',
+        duration: 2000,
+        style: {
+          background: '#10B981',
+          color: '#fff',
+          fontWeight: '500',
+        },
+      });
+    },
+
+    hideStepError: (error: any) => {
+      const message = extractErrorMessage(error);
+      return toast.error(message, {
+        icon: '❌',
+        duration: 4000,
+        style: {
+          background: '#EF4444',
+          color: '#fff',
+          fontWeight: '500',
+        },
+      });
+    },
+
+    vpApprovalSuccess: (type: 'initial' | 'final') => {
+      const message = type === 'initial'
+        ? 'Initial VP approval completed successfully!'
+        : 'Final VP approval completed successfully!';
+      return toast.success(message, {
         icon: '✅',
         duration: 3000,
         style: {
@@ -171,24 +360,12 @@ export const toastUtils = {
       });
     },
 
-    rejectionSuccess: () => {
-      return toast.success('Clearance step rejected successfully!', {
+    vpRejectionSuccess: () => {
+      return toast.success('Request rejected successfully', {
         icon: '❌',
         duration: 3000,
         style: {
-          background: '#F59E0B', // amber-500 for rejection (warning style)
-          color: '#fff',
-          fontWeight: '500',
-        },
-      });
-    },
-
-    updateError: (message?: string) => {
-      return toast.error(message || 'Failed to update clearance step.', {
-        icon: '❌',
-        duration: 5000,
-        style: {
-          background: '#EF4444',
+          background: '#F59E0B',
           color: '#fff',
           fontWeight: '500',
         },

@@ -35,7 +35,7 @@ const ReviewerDashboard: React.FC = () => {
           toastUtils.error(response.message || 'Failed to fetch review steps.');
         }
       } catch (error) {
-        toastUtils.error('An error occurred while fetching review steps.');
+        toastUtils.error(error);
       }
       setIsLoading(false);
     };
@@ -50,7 +50,7 @@ const ReviewerDashboard: React.FC = () => {
     }
 
     if (status === 'issue' && !comment.trim()) {
-      toastUtils.error('A comment is required when flagging an issue.');
+      toastUtils.form.validationError('A comment is required when flagging an issue.');
       return;
     }
 
@@ -58,15 +58,16 @@ const ReviewerDashboard: React.FC = () => {
     try {
       const response = await clearanceService.updateClearanceStep(stepId, { status, comment, signature });
       if (response.success) {
-        toastUtils.success(`Step successfully updated to ${status}.`);
+        // Use enhanced clearance toast with step department/name
+        toastUtils.clearance.stepUpdateSuccess(step?.department, status);
         setSteps(steps.map(s => s._id === stepId ? { ...s, status: status, comment: comment } : s));
         setCommentingStepId(null);
         setComment('');
       } else {
-        toastUtils.error(response.message || 'Failed to update step.');
+        toastUtils.clearance.stepUpdateError(response.message || 'Failed to update step.');
       }
     } catch (error) {
-      toastUtils.error('An error occurred while updating the step.');
+      toastUtils.clearance.stepUpdateError(error);
     } finally {
       setApprovalInitiated(false);
     }
@@ -90,13 +91,13 @@ const ReviewerDashboard: React.FC = () => {
       try {
         const response = await clearanceService.hideClearanceStep(stepId);
         if (response.success) {
-          toastUtils.success('Step successfully hidden.');
+          toastUtils.clearance.hideStepSuccess();
           setSteps(steps.filter(s => s._id !== stepId));
         } else {
-          toastUtils.error(response.message || 'Failed to hide step.');
+          toastUtils.clearance.hideStepError(response.message || 'Failed to hide step.');
         }
       } catch (error) {
-        toastUtils.error('An error occurred while hiding the step.');
+        toastUtils.clearance.hideStepError(error);
       }
     }
   };
@@ -120,33 +121,69 @@ const ReviewerDashboard: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-8">
-          {steps.map((step) => (
+          {steps.filter(step => step.requestId).map((step) => (
             <div key={step._id} className="bg-white rounded-3xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
               <div className="p-7 flex-grow">
+                {/* Staff Information Section */}
+                {step.requestId && step.requestId.formData && (step.requestId.formData.firstName || step.requestId.formData.lastName || step.requestId.formData.phoneNumber) && (
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6 border border-blue-200">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                      <span className="mr-2">👤</span> Staff Information
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                      {step.requestId.formData.firstName && (
+                        <div>
+                          <span className="text-gray-500">First Name:</span>
+                          <p className="font-semibold text-gray-900">{step.requestId.formData.firstName}</p>
+                        </div>
+                      )}
+                      {step.requestId.formData.lastName && (
+                        <div>
+                          <span className="text-gray-500">Last Name:</span>
+                          <p className="font-semibold text-gray-900">{step.requestId.formData.lastName}</p>
+                        </div>
+                      )}
+                      {step.requestId.formData.phoneNumber && (
+                        <div>
+                          <span className="text-gray-500">Phone Number:</span>
+                          <p className="font-semibold text-gray-900">{step.requestId.formData.phoneNumber}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid md:grid-cols-3 gap-6">
                   {/* Request Info */}
                   <div className="md:col-span-2">
                     <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-1">{step.requestId.initiatedBy.name}</h3>
-                        <p className="text-sm text-gray-500">ID: {step.requestId.referenceCode}</p>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-2xl">📄</span>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">
+                            {step.requestId?.referenceCode || 'Unknown Request'}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Submitted: {step.requestId?.createdAt ? new Date(step.requestId.createdAt).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
                       </div>
                       <span className={`px-4 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800`}>
-                        {step.requestId.status.replace('_', ' ').toUpperCase()}
+                        {step.requestId?.status?.replace('_', ' ').toUpperCase() || 'N/A'}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                      <p><strong>Purpose:</strong> {step.requestId.purpose}</p>
-                      <p><strong>Department:</strong> {step.requestId.formData.department}</p>
-                      <p><strong>Teacher ID:</strong> {step.requestId.formData.teacherId}</p>
-                      <p><strong>Submitted:</strong> {new Date(step.requestId.createdAt).toLocaleString()}</p>
+                      <p><strong>Purpose:</strong> {step.requestId?.purpose || 'N/A'}</p>
+                      <p><strong>Department:</strong> {step.requestId?.formData?.department || 'N/A'}</p>
+                      <p><strong>Teacher ID:</strong> {step.requestId?.formData?.teacherId || 'N/A'}</p>
+                      <p><strong>Submitted:</strong> {step.requestId?.createdAt ? new Date(step.requestId.createdAt).toLocaleString() : 'N/A'}</p>
                     </div>
                   </div>
 
                   {/* Uploaded Files */}
                   <div className="md:col-span-1">
                     <h4 className="text-lg font-semibold text-gray-800 mb-3">Uploaded Files</h4>
-                    {step.requestId.uploadedFiles.length > 0 ? (
+                    {step.requestId?.uploadedFiles && step.requestId.uploadedFiles.length > 0 ? (
                       <ul className="space-y-3">
                         {step.requestId.uploadedFiles
                           .filter(file => {
@@ -178,6 +215,7 @@ const ReviewerDashboard: React.FC = () => {
                     )}
                   </div>
                 </div>
+
               </div>
 
               {/* Actions */}
@@ -249,19 +287,55 @@ const ReviewerDashboard: React.FC = () => {
 
       {/* File Preview Modal */}
       {previewFile && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h5 className="text-lg font-bold">File Preview</h5>
-              <button onClick={() => setPreviewFile(null)} className="p-2 rounded-full hover:bg-gray-200">
-                <FaTimes />
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setPreviewFile(null)}>
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-5xl h-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-4 border-b bg-gray-50">
+              <h5 className="text-lg font-bold text-gray-900">File Preview</h5>
+              <button
+                onClick={() => setPreviewFile(null)}
+                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Close preview"
+              >
+                <FaTimes className="text-gray-600" />
               </button>
             </div>
-            <div className="flex-grow p-4 overflow-auto">
-              {previewFile.endsWith('.pdf') ? (
-                <iframe src={previewFile} className="w-full h-full" title="File Preview"></iframe>
+            <div className="flex-grow overflow-auto bg-gray-100">
+              {previewFile.toLowerCase().endsWith('.pdf') ? (
+                <iframe
+                  src={previewFile}
+                  className="w-full h-full min-h-[600px]"
+                  title="PDF Preview"
+                  style={{ border: 'none' }}
+                />
+              ) : /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(previewFile.toLowerCase()) ? (
+                <div className="flex items-center justify-center h-full p-4">
+                  <img
+                    src={previewFile}
+                    alt="File Preview"
+                    className="max-w-full max-h-full object-contain"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjOTk5Ij5JbWFnZSBDb3VsZCBOb3QgQmUgTG9hZGVkPC90ZXh0Pjwvc3ZnPg==';
+                    }}
+                  />
+                </div>
               ) : (
-                <img src={previewFile} alt="Preview" className="max-w-full max-h-full mx-auto" />
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center p-8">
+                    <p className="text-gray-600 text-lg mb-4">Preview not available for this file type.</p>
+                    <a
+                      href={previewFile}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <FaDownload className="mr-2" />
+                      Download File
+                    </a>
+                  </div>
+                </div>
               )}
             </div>
           </div>
