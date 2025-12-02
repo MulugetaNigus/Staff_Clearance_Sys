@@ -1,7 +1,9 @@
 const { asyncHandler } = require('../utils/asyncHandler');
 const ClearanceRequest = require('../models/ClearanceRequest');
 const ClearanceStep = require('../models/ClearanceStep');
+const User = require('../models/User');
 const ActivityLog = require('../models/ActivityLog');
+const Notification = require('../models/Notification');
 const { ACADEMIC_STAFF_WORKFLOW } = require('../config/workflow');
 const AppError = require('../utils/AppError');
 
@@ -25,6 +27,16 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
   // Validate staff information fields
   if (!firstName || !lastName || !phoneNumber) {
     return next(new AppError('First name, last name, and phone number are required', 400));
+  }
+
+  // Validate Ethiopian phone number format
+  const phonePattern = /^(\+251[0-9]{9}|09[0-9]{8})$/;
+  const trimmedPhone = phoneNumber.trim();
+  if (!phonePattern.test(trimmedPhone)) {
+    return next(new AppError(
+      'Invalid phone number format. Please use Ethiopian format: +251912345678 or 0912345678',
+      400
+    ));
   }
 
   // Validate department match with user's actual department
@@ -157,6 +169,15 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
   // Update workflow - make next steps available
   await updateWorkflowAvailability(requestId);
 
+  // Create notification for the request owner
+  await Notification.create({
+    userId: request.initiatedBy,
+    type: 'vp_initial_approved',
+    message: 'VP approved your clearance request to proceed',
+    relatedRequest: request._id,
+    read: false,
+  });
+
   await ActivityLog.create({
     userId,
     action: 'INITIAL_APPROVAL',
@@ -263,6 +284,18 @@ const updateClearanceStep = asyncHandler(async (req, res, next) => {
     step.lastUpdatedAt = new Date();
     await step.save();
   }
+
+  // Create notification for the request owner
+  await Notification.create({
+    userId: step.requestId.initiatedBy,
+    type: status === 'cleared' ? 'step_approved' : 'step_rejected',
+    message: status === 'cleared'
+      ? `${step.department} cleared your clearance request`
+      : `${step.department} flagged an issue with your clearance request`,
+    relatedRequest: step.requestId._id,
+    relatedStep: step._id,
+    read: false,
+  });
 
   // Update workflow availability
   await updateWorkflowAvailability(step.requestId._id);
@@ -669,6 +702,15 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
 
   // Update workflow availability
   await updateWorkflowAvailability(requestId);
+
+  // Create notification for the request owner
+  await Notification.create({
+    userId: request.initiatedBy,
+    type: 'vp_final_approved',
+    message: 'VP completed final approval - Your request is cleared!',
+    relatedRequest: request._id,
+    read: false,
+  });
 
   await ActivityLog.create({
     userId,

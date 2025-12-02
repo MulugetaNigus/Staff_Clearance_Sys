@@ -13,6 +13,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -80,6 +81,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/certificate', certificateRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/verify', publicRoutes);
 
 // Error handling middleware

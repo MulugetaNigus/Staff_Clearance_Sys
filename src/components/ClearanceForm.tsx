@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { FaFilePdf, FaFileImage, FaFileAlt, FaTimes, FaUsers, FaUserShield, FaUserTie } from 'react-icons/fa';
+import { toastUtils } from '../utils/toastUtils';
 
 interface ClearanceFormProps {
   onSubmit: (data: FormData) => Promise<void>;
@@ -72,12 +73,30 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
     return true;
   };
 
+  const validatePhoneNumber = (phone: string): boolean => {
+    // Ethiopian phone number formats:
+    // International: +251 followed by 9 digits (e.g., +251912345678)
+    // Local: 09 followed by 8 digits (e.g., 0912345678)
+    const internationalPattern = /^\+251[0-9]{9}$/;
+    const localPattern = /^09[0-9]{8}$/;
+
+    const trimmedPhone = phone.trim();
+    return internationalPattern.test(trimmedPhone) || localPattern.test(trimmedPhone);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validate all required fields
     if (!purpose || !teacherId || !typedDepartment || !firstName || !lastName || !phoneNumber) {
       setError('Please fill in all required fields.');
+      return;
+    }
+
+    // Validate phone number format
+    if (!validatePhoneNumber(phoneNumber)) {
+      setError('Invalid phone number. Please use Ethiopian format: +251912345678 or 0912345678');
+      toastUtils.form.validationError('Invalid phone number format. Use +251912345678 or 0912345678');
       return;
     }
 

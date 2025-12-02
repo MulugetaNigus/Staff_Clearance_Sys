@@ -385,19 +385,55 @@ const VPApprovalDashboard: React.FC = () => {
 
       {/* File Preview Modal */}
       {previewFile && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h5 className="text-lg font-bold">File Preview</h5>
-              <button onClick={() => setPreviewFile(null)} className="p-2 rounded-full hover:bg-gray-200">
-                <FaTimes />
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setPreviewFile(null)}>
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-5xl h-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-4 border-b bg-gray-50">
+              <h5 className="text-lg font-bold text-gray-900">File Preview</h5>
+              <button
+                onClick={() => setPreviewFile(null)}
+                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Close preview"
+              >
+                <FaTimes className="text-gray-600" />
               </button>
             </div>
-            <div className="flex-grow p-4 overflow-auto">
-              {previewFile.endsWith('.pdf') ? (
-                <iframe src={previewFile} className="w-full h-full" title="File Preview"></iframe>
+            <div className="flex-grow overflow-auto bg-gray-100">
+              {previewFile.toLowerCase().endsWith('.pdf') ? (
+                <iframe
+                  src={previewFile}
+                  className="w-full h-full min-h-[600px]"
+                  title="PDF Preview"
+                  style={{ border: 'none' }}
+                />
+              ) : /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(previewFile.toLowerCase()) ? (
+                <div className="flex items-center justify-center h-full p-4">
+                  <img
+                    src={previewFile}
+                    alt="File Preview"
+                    className="max-w-full max-h-full object-contain"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjOTk5Ij5JbWFnZSBDb3VsZCBOb3QgQmUgTG9hZGVkPC90ZXh0Pjwvc3ZnPg==';
+                    }}
+                  />
+                </div>
               ) : (
-                <img src={previewFile} alt="Preview" className="max-w-full max-h-full mx-auto" />
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center p-8">
+                    <p className="text-gray-600 text-lg mb-4">Preview not available for this file type.</p>
+                    <a
+                      href={previewFile}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <FaDownload className="mr-2" />
+                      Download File
+                    </a>
+                  </div>
+                </div>
               )}
             </div>
           </div>

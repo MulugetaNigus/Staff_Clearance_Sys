@@ -35,19 +35,21 @@ const getStatusCode = (error: any): number | null => {
 
 // Helper function to determine error type based on status code
 const getErrorType = (error: any): 'network' | 'auth' | 'validation' | 'permission' | 'notfound' | 'server' | 'unknown' => {
-  const statusCode = getStatusCode(error);
-
-  // Network error (no response)
-  if (error?.code === 'ERR_NETWORK' || !error?.response) {
+  // Network error (no response at all - connection failed)
+  // Only treat as network error if there's explicitly no response AND it's a network code
+  if (error?.code === 'ERR_NETWORK' && !error?.response) {
     return 'network';
   }
 
-  if (!statusCode) return 'unknown';
+  const statusCode = getStatusCode(error);
 
-  if (statusCode === 401 || statusCode === 403) return 'auth';
-  if (statusCode === 400) return 'validation';
-  if (statusCode === 404) return 'notfound';
-  if (statusCode >= 500) return 'server';
+  // If we have a status code, it's an HTTP error, not a network error
+  if (statusCode) {
+    if (statusCode === 401 || statusCode === 403) return 'auth';
+    if (statusCode === 400) return 'validation';
+    if (statusCode === 404) return 'notfound';
+    if (statusCode >= 500) return 'server';
+  }
 
   return 'unknown';
 };
