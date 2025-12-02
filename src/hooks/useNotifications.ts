@@ -60,8 +60,8 @@ export const useNotifications = () => {
         // Initial fetch
         fetchNotifications();
 
-        // Poll every 30 seconds for new notifications
-        const interval = setInterval(fetchNotifications, 30000);
+        // Poll every 5 seconds for new notifications
+        const interval = setInterval(fetchNotifications, 5000);
 
         return () => clearInterval(interval);
     }, []);
