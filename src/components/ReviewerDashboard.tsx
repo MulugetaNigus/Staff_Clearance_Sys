@@ -124,6 +124,35 @@ const ReviewerDashboard: React.FC = () => {
           {steps.map((step) => (
             <div key={step._id} className="bg-white rounded-3xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
               <div className="p-7 flex-grow">
+                {/* Staff Information Section */}
+                {step.requestId.formData && (step.requestId.formData.firstName || step.requestId.formData.lastName || step.requestId.formData.phoneNumber) && (
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6 border border-blue-200">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                      <span className="mr-2">👤</span> Staff Information
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                      {step.requestId.formData.firstName && (
+                        <div>
+                          <span className="text-gray-500">First Name:</span>
+                          <p className="font-semibold text-gray-900">{step.requestId.formData.firstName}</p>
+                        </div>
+                      )}
+                      {step.requestId.formData.lastName && (
+                        <div>
+                          <span className="text-gray-500">Last Name:</span>
+                          <p className="font-semibold text-gray-900">{step.requestId.formData.lastName}</p>
+                        </div>
+                      )}
+                      {step.requestId.formData.phoneNumber && (
+                        <div>
+                          <span className="text-gray-500">Phone:</span>
+                          <p className="font-semibold text-gray-900">{step.requestId.formData.phoneNumber}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid md:grid-cols-3 gap-6">
                   {/* Request Info */}
                   <div className="md:col-span-2">

@@ -32,7 +32,16 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
   const { user } = useAuth();
   const [purpose, setPurpose] = useState('');
   const [teacherId, setTeacherId] = useState('');
-  const [department] = useState(user?.department || '');
+
+  // New staff information fields
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+
+  // Department validation
+  const [typedDepartment, setTypedDepartment] = useState('');
+  const [departmentError, setDepartmentError] = useState('');
+
   const [supportingDocuments, setSupportingDocuments] = useState<UploadedFile[]>([]);
   const [error, setError] = useState('');
 
@@ -51,10 +60,30 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
     setSupportingDocuments(prevFiles => prevFiles.map((file, i) => i === index ? { ...file, visibility } : file));
   };
 
+  const validateDepartment = () => {
+    const actualDept = user?.department?.trim().toLowerCase();
+    const typedDept = typedDepartment.trim().toLowerCase();
+
+    if (typedDept !== actualDept) {
+      setDepartmentError(`Department mismatch! Your registered department is "${user?.department}". Please enter the correct department.`);
+      return false;
+    }
+    setDepartmentError('');
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!purpose || !teacherId || !department) {
+
+    // Validate all required fields
+    if (!purpose || !teacherId || !typedDepartment || !firstName || !lastName || !phoneNumber) {
       setError('Please fill in all required fields.');
+      return;
+    }
+
+    // Validate department match
+    if (!validateDepartment()) {
+      setError('Department does not match your registered department.');
       return;
     }
 
@@ -64,7 +93,10 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
     formData.append('formData', JSON.stringify({
       purpose,
       teacherId,
-      department,
+      department: typedDepartment.trim(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phoneNumber: phoneNumber.trim(),
       fileMetadata: supportingDocuments.map(doc => ({ fileName: doc.file.name, visibility: doc.visibility }))
     }));
 
@@ -86,6 +118,57 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Staff Information Section */}
+        <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <span className="mr-2">👤</span> Staff Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+              <input
+                type="text"
+                id="firstName"
+                name="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter your first name"
+              />
+              {error && !firstName && <p className="text-red-500 text-sm mt-1">{error}</p>}
+            </div>
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter your last name"
+              />
+              {error && !lastName && <p className="text-red-500 text-sm mt-1">{error}</p>}
+            </div>
+            <div className="md:col-span-2">
+              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+              <input
+                type="tel"
+                id="phoneNumber"
+                name="phoneNumber"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter your phone number (e.g., +251912345678)"
+              />
+              {error && !phoneNumber && <p className="text-red-500 text-sm mt-1">{error}</p>}
+            </div>
+          </div>
+        </div>
+
         <div>
           <label htmlFor="purpose" className="block text-sm font-medium text-gray-700 mb-2">Purpose of Clearance *</label>
           <select
@@ -128,11 +211,19 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
             type="text"
             id="department"
             name="department"
-            value={user?.department || ''}
-            readOnly
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
-            placeholder="e.g., Computer Science, Physics"
+            value={typedDepartment}
+            onChange={(e) => setTypedDepartment(e.target.value)}
+            onBlur={validateDepartment}
+            required
+            className={`w-full px-4 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 ${departmentError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+              }`}
+            placeholder="Type your department"
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Your registered department: <span className="font-semibold text-blue-600">{user?.department}</span>
+          </p>
+          {departmentError && <p className="text-red-500 text-sm mt-1 font-medium">{departmentError}</p>}
+          {error && !typedDepartment && <p className="text-red-500 text-sm mt-1">{error}</p>}
         </div>
 
         <div>

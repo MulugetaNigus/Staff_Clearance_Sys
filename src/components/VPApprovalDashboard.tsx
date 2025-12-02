@@ -120,8 +120,8 @@ const VPApprovalDashboard: React.FC = () => {
           <button
             onClick={() => setActiveTab('initial')}
             className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'initial'
-                ? 'bg-blue-500 text-white shadow-sm'
-                : 'text-gray-700 hover:bg-gray-100'
+              ? 'bg-blue-500 text-white shadow-sm'
+              : 'text-gray-700 hover:bg-gray-100'
               }`}
           >
             Initial Validation ({initialApprovalRequests.length})
@@ -129,8 +129,8 @@ const VPApprovalDashboard: React.FC = () => {
           <button
             onClick={() => setActiveTab('final')}
             className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'final'
-                ? 'bg-purple-500 text-white shadow-sm'
-                : 'text-gray-700 hover:bg-gray-100'
+              ? 'bg-purple-500 text-white shadow-sm'
+              : 'text-gray-700 hover:bg-gray-100'
               }`}
           >
             Final Oversight ({finalApprovalRequests.length})
@@ -158,6 +158,35 @@ const VPApprovalDashboard: React.FC = () => {
             {initialApprovalRequests.map((request) => (
               <div key={request._id} className="bg-white rounded-3xl shadow-xl border border-blue-200 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
                 <div className="p-7 flex-grow">
+                  {/* Staff Information Section */}
+                  {request.formData && (request.formData.firstName || request.formData.lastName || request.formData.phoneNumber) && (
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6 border border-blue-200">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                        <span className="mr-2">👤</span> Staff Information
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                        {request.formData.firstName && (
+                          <div>
+                            <span className="text-gray-500">First Name:</span>
+                            <p className="font-semibold text-gray-900">{request.formData.firstName}</p>
+                          </div>
+                        )}
+                        {request.formData.lastName && (
+                          <div>
+                            <span className="text-gray-500">Last Name:</span>
+                            <p className="font-semibold text-gray-900">{request.formData.lastName}</p>
+                          </div>
+                        )}
+                        {request.formData.phoneNumber && (
+                          <div>
+                            <span className="text-gray-500">Phone:</span>
+                            <p className="font-semibold text-gray-900">{request.formData.phoneNumber}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid md:grid-cols-3 gap-6">
                     {/* Request Info */}
                     <div className="md:col-span-2">
@@ -253,6 +282,35 @@ const VPApprovalDashboard: React.FC = () => {
             {finalApprovalRequests.map((request) => (
               <div key={request._id} className="bg-white rounded-3xl shadow-xl border border-purple-200 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden">
                 <div className="p-7 flex-grow">
+                  {/* Staff Information Section */}
+                  {request.formData && (request.formData.firstName || request.formData.lastName || request.formData.phoneNumber) && (
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6 border border-purple-200">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                        <span className="mr-2">👤</span> Staff Information
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                        {request.formData.firstName && (
+                          <div>
+                            <span className="text-gray-500">First Name:</span>
+                            <p className="font-semibold text-gray-900">{request.formData.firstName}</p>
+                          </div>
+                        )}
+                        {request.formData.lastName && (
+                          <div>
+                            <span className="text-gray-500">Last Name:</span>
+                            <p className="font-semibold text-gray-900">{request.formData.lastName}</p>
+                          </div>
+                        )}
+                        {request.formData.phoneNumber && (
+                          <div>
+                            <span className="text-gray-500">Phone:</span>
+                            <p className="font-semibold text-gray-900">{request.formData.phoneNumber}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid md:grid-cols-3 gap-6">
                     {/* Request Info */}
                     <div className="md:col-span-2">

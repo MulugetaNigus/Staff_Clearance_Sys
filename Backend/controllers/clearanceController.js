@@ -15,11 +15,31 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
 
   const parsedFormData = JSON.parse(formData);
   console.log('Parsed Form Data:', parsedFormData);
-  const { purpose, teacherId, department, fileMetadata } = parsedFormData;
+  const { purpose, teacherId, department, firstName, lastName, phoneNumber, fileMetadata } = parsedFormData;
 
+  // Validate required fields
   if (!purpose || !teacherId || !department) {
     return next(new AppError('Purpose, teacherId and department are required in formData', 400));
   }
+
+  // Validate staff information fields
+  if (!firstName || !lastName || !phoneNumber) {
+    return next(new AppError('First name, last name, and phone number are required', 400));
+  }
+
+  // Validate department match with user's actual department
+  const actualDepartment = req.user.department;
+  const submittedDepartment = department.trim();
+  const actualDeptLower = actualDepartment.trim().toLowerCase();
+  const submittedDeptLower = submittedDepartment.toLowerCase();
+
+  if (submittedDeptLower !== actualDeptLower) {
+    return next(new AppError(
+      `Department mismatch. Your registered department is "${actualDepartment}". Please enter the correct department.`,
+      400
+    ));
+  }
+
   const staffId = teacherId;
 
   // Generate a unique reference code
@@ -40,7 +60,7 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
     referenceCode,
     staffId,
     purpose,
-    formData: parsedFormData,
+    formData: parsedFormData, // This includes firstName, lastName, phoneNumber, department
     initiatedBy,
     status: 'initiated',
     uploadedFiles,
