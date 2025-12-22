@@ -1,5 +1,4 @@
 import API from './api';
-import axios from 'axios';
 
 export const clearanceService = {
   createClearanceRequest: async (data: FormData) => {
@@ -38,6 +37,11 @@ export const clearanceService = {
 
   approveFinalRequest: async (id: string, signature?: string) => {
     const response = await API.put(`/clearance/requests/${id}/approve-final`, { signature });
+    return response.data;
+  },
+
+  rejectFinalRequest: async (id: string, rejectionReason: string) => {
+    const response = await API.put(`/clearance/requests/${id}/reject-final`, { rejectionReason });
     return response.data;
   },
 

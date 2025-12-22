@@ -26,6 +26,11 @@ const VPApprovalDashboard: React.FC = () => {
   const [approvalInitiated, setApprovalInitiated] = useState(false);
   const [activeTab, setActiveTab] = useState<'initial' | 'final'>('initial');
 
+  // Rejection state
+  const [rejectingRequestId, setRejectingRequestId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectingType, setRejectingType] = useState<'initial' | 'final'>('initial');
+
   useEffect(() => {
     const fetchRequests = async () => {
       try {
@@ -101,6 +106,40 @@ const VPApprovalDashboard: React.FC = () => {
       setIsSignatureModalOpen(false);
       setSigningRequestId(null);
       setSigningType('initial');
+      setApprovalInitiated(false);
+    }
+  };
+
+  const handleRejectRequest = async (id: string, type: 'initial' | 'final') => {
+    if (!rejectionReason.trim()) {
+      toastUtils.form.validationError('Please provide a reason for rejection.');
+      return;
+    }
+
+    setApprovalInitiated(true);
+    try {
+      let response;
+      if (type === 'initial') {
+        response = await clearanceService.rejectInitialRequest(id, rejectionReason);
+      } else {
+        response = await clearanceService.rejectFinalRequest(id, rejectionReason);
+      }
+
+      if (response.success) {
+        toastUtils.success(`Request rejected successfully.`);
+        if (type === 'initial') {
+          setInitialApprovalRequests(initialApprovalRequests.filter(req => req._id !== id));
+        } else {
+          setFinalApprovalRequests(finalApprovalRequests.filter(req => req._id !== id));
+        }
+        setRejectingRequestId(null);
+        setRejectionReason('');
+      } else {
+        toastUtils.error(response.message || 'Failed to reject request.');
+      }
+    } catch (error) {
+      toastUtils.error('An error occurred while rejecting the request.');
+    } finally {
       setApprovalInitiated(false);
     }
   };
@@ -248,17 +287,54 @@ const VPApprovalDashboard: React.FC = () => {
                 </div>
 
                 {/* Actions for Initial Approval */}
-                <div className="p-6 bg-blue-50 border-t border-blue-100 flex justify-end space-x-4">
-                  <button onClick={() => {
-                    setSigningRequestId(request._id);
-                    setSigningType('initial');
-                    setIsSignatureModalOpen(true);
-                  }}
-                    disabled={approvalInitiated || isSignatureModalOpen}
-                    className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2">
-                    <span>✓</span>
-                    <span>Validate & Authorize</span>
-                  </button>
+                <div className="p-6 bg-blue-50 border-t border-blue-100">
+                  {rejectingRequestId === request._id && rejectingType === 'initial' ? (
+                    <div className="w-full">
+                      <textarea
+                        placeholder="Please provide a clear reason for rejecting this request..."
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        className="w-full p-4 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800 text-sm"
+                        rows={3}
+                      />
+                      <div className="flex justify-end space-x-4 mt-4">
+                        <button
+                          onClick={() => { setRejectingRequestId(null); setRejectionReason(''); }}
+                          className="px-6 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-100"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleRejectRequest(request._id, 'initial')}
+                          disabled={!rejectionReason.trim() || approvalInitiated}
+                          className="px-6 py-2 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50"
+                        >
+                          Confirm Rejection
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end space-x-4">
+                      <button
+                        onClick={() => { setRejectingRequestId(request._id); setRejectingType('initial'); }}
+                        disabled={approvalInitiated || isSignatureModalOpen}
+                        className="px-6 py-2 text-sm font-medium border border-red-300 text-red-700 rounded-xl hover:bg-red-50 disabled:opacity-50 flex items-center space-x-2"
+                      >
+                        <span>✕</span>
+                        <span>Reject</span>
+                      </button>
+                      <button onClick={() => {
+                        setSigningRequestId(request._id);
+                        setSigningType('initial');
+                        setIsSignatureModalOpen(true);
+                      }}
+                        disabled={approvalInitiated || isSignatureModalOpen}
+                        className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2">
+                        <span>✓</span>
+                        <span>Validate & Authorize</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -358,17 +434,54 @@ const VPApprovalDashboard: React.FC = () => {
                 </div>
 
                 {/* Actions for Final Approval */}
-                <div className="p-6 bg-purple-50 border-t border-purple-100 flex justify-end space-x-4">
-                  <button onClick={() => {
-                    setSigningRequestId(request._id);
-                    setSigningType('final');
-                    setIsSignatureModalOpen(true);
-                  }}
-                    disabled={approvalInitiated || isSignatureModalOpen}
-                    className="px-6 py-2 text-sm font-medium bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 flex items-center space-x-2">
-                    <span>🏁</span>
-                    <span>Provide Final Oversight</span>
-                  </button>
+                <div className="p-6 bg-purple-50 border-t border-purple-100">
+                  {rejectingRequestId === request._id && rejectingType === 'final' ? (
+                    <div className="w-full">
+                      <textarea
+                        placeholder="Please provide a clear reason for rejecting this request..."
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        className="w-full p-4 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-800 text-sm"
+                        rows={3}
+                      />
+                      <div className="flex justify-end space-x-4 mt-4">
+                        <button
+                          onClick={() => { setRejectingRequestId(null); setRejectionReason(''); }}
+                          className="px-6 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-100"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleRejectRequest(request._id, 'final')}
+                          disabled={!rejectionReason.trim() || approvalInitiated}
+                          className="px-6 py-2 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50"
+                        >
+                          Confirm Rejection
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end space-x-4">
+                      <button
+                        onClick={() => { setRejectingRequestId(request._id); setRejectingType('final'); }}
+                        disabled={approvalInitiated || isSignatureModalOpen}
+                        className="px-6 py-2 text-sm font-medium border border-red-300 text-red-700 rounded-xl hover:bg-red-50 disabled:opacity-50 flex items-center space-x-2"
+                      >
+                        <span>✕</span>
+                        <span>Reject</span>
+                      </button>
+                      <button onClick={() => {
+                        setSigningRequestId(request._id);
+                        setSigningType('final');
+                        setIsSignatureModalOpen(true);
+                      }}
+                        disabled={approvalInitiated || isSignatureModalOpen}
+                        className="px-6 py-2 text-sm font-medium bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 flex items-center space-x-2">
+                        <span>🏁</span>
+                        <span>Provide Final Oversight</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
