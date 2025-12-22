@@ -362,7 +362,11 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
           />
         );
       }
-      return <ProgressTracker steps={clearanceSteps} />;
+      return <ProgressTracker
+        steps={clearanceSteps}
+        rejectionReason={clearanceSteps.length > 0 ? (clearanceSteps[0] as any).requestId?.rejectionReason : undefined}
+        requestStatus={clearanceSteps.length > 0 ? (clearanceSteps[0] as any).requestId?.status : undefined}
+      />;
     case 'vp-approval':
       return <VPApprovalDashboard />;
     case 'review-requests':

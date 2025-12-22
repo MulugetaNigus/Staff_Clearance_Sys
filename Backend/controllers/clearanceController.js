@@ -221,7 +221,8 @@ const rejectInitialRequest = asyncHandler(async (req, res, next) => {
       {
         status: 'rejected',
         reviewedBy: userId,
-        lastUpdatedAt: new Date()
+        lastUpdatedAt: new Date(),
+        comment: rejectionReason
       }
     );
 

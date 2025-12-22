@@ -7,7 +7,7 @@ interface EnhancedClearanceStep {
   requestId: string;
   department: string;
   reviewerRole: string;
-  status: 'pending' | 'available' | 'cleared' | 'issue' | 'blocked';
+  status: 'pending' | 'available' | 'cleared' | 'issue' | 'blocked' | 'rejected';
   comment?: string;
   lastUpdatedAt: string;
   reviewedBy?: { name: string };
@@ -34,6 +34,7 @@ const statusStyles = {
   cleared: { icon: FaCheck, color: 'bg-green-500', textColor: 'text-green-800', labelColor: 'bg-green-100 text-green-800', shadow: 'shadow-green-200', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
   issue: { icon: FaExclamationTriangle, color: 'bg-red-500', textColor: 'text-red-800', labelColor: 'bg-red-100 text-red-800', shadow: 'shadow-red-200', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
   blocked: { icon: FaLock, color: 'bg-yellow-500', textColor: 'text-yellow-800', labelColor: 'bg-yellow-100 text-yellow-800', shadow: 'shadow-yellow-200', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
+  rejected: { icon: FaExclamationTriangle, color: 'bg-red-600', textColor: 'text-red-900', labelColor: 'bg-red-200 text-red-900', shadow: 'shadow-red-300', bgColor: 'bg-red-100', borderColor: 'border-red-300' },
 };
 
 const ProgressTracker: React.FC<ProgressTrackerProps> = ({ steps }) => {
@@ -86,7 +87,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ steps }) => {
     const completed = stageSteps.filter(step => step.status === 'cleared').length;
     const available = stageSteps.filter(step => step.status === 'available').length;
     const issues = stageSteps.filter(step => step.status === 'issue').length;
-    
+
     return { total, completed, available, issues, percentage: total > 0 ? (completed / total) * 100 : 0 };
   };
 
@@ -109,17 +110,15 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ steps }) => {
           return (
             <div key={stageName} className="relative">
               {/* Stage Header */}
-              <div className={`flex items-center justify-between p-4 rounded-lg border-2 mb-4 ${
-                isStageCompleted ? 'bg-green-50 border-green-200' :
+              <div className={`flex items-center justify-between p-4 rounded-lg border-2 mb-4 ${isStageCompleted ? 'bg-green-50 border-green-200' :
                 isStageActive ? 'bg-blue-50 border-blue-200' :
-                'bg-gray-50 border-gray-200'
-              }`}>
+                  'bg-gray-50 border-gray-200'
+                }`}>
                 <div className="flex items-center space-x-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    isStageCompleted ? 'bg-green-500 text-white' :
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isStageCompleted ? 'bg-green-500 text-white' :
                     isStageActive ? 'bg-blue-500 text-white' :
-                    'bg-gray-400 text-white'
-                  }`}>
+                      'bg-gray-400 text-white'
+                    }`}>
                     {stageIndex + 1}
                   </div>
                   <h3 className="text-lg font-semibold text-gray-800">{stageName}</h3>
@@ -129,7 +128,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ steps }) => {
                     {stageProgress.completed}/{stageProgress.total} completed
                   </div>
                   <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-green-500 transition-all duration-300"
                       style={{ width: `${stageProgress.percentage}%` }}
                     />
@@ -140,7 +139,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ steps }) => {
               {/* Stage Steps */}
               <div className="relative pl-4">
                 <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-200" aria-hidden="true"></div>
-                
+
                 {stageSteps.map((step) => {
                   const stepInfo = getStepInfo(step);
                   const status = statusStyles[step.status as keyof typeof statusStyles] || statusStyles.pending;
@@ -153,7 +152,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ steps }) => {
                         <div className={`z-10 flex items-center justify-center w-12 h-12 rounded-full ${status.color} text-white shadow-md ${status.shadow}`}>
                           <IconComponent className="w-5 h-5" />
                         </div>
-                        
+
                         {/* Step Card */}
                         <div className={`ml-6 flex-1 rounded-lg border-2 ${status.borderColor} ${status.bgColor} p-4`}>
                           <div className="flex items-center justify-between">
@@ -164,18 +163,17 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ steps }) => {
                               {step.description && (
                                 <p className="text-sm text-gray-600 mt-1">{step.description}</p>
                               )}
-                              
+
                               {/* VP Signature Type */}
                               {step.vpSignatureType && (
                                 <div className="mt-2">
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    step.vpSignatureType === 'initial' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                                  }`}>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${step.vpSignatureType === 'initial' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                                    }`}>
                                     {step.vpSignatureType === 'initial' ? 'Initial VP Validation' : 'Final VP Oversight'}
                                   </span>
                                 </div>
                               )}
-                              
+
                               {/* Interdependency Notice */}
                               {step.isInterdependent && (
                                 <div className="mt-2">
@@ -185,7 +183,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ steps }) => {
                                 </div>
                               )}
                             </div>
-                            
+
                             <div className="ml-4">
                               <span className={`px-3 py-1 rounded-full text-sm font-semibold ${status.labelColor}`}>
                                 {step.status.charAt(0).toUpperCase() + step.status.slice(1)}
@@ -194,21 +192,18 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ steps }) => {
                           </div>
 
                           {/* Additional Details */}
-                          {(step.status === 'issue' || step.status === 'cleared' || step.comment) && (
+                          {(step.status === 'issue' || step.status === 'rejected' || step.status === 'cleared' || step.comment) && (
                             <div className="mt-4 pt-4 border-t border-gray-200">
                               {step.comment && (
-                                <div className={`p-3 rounded-lg border ${
-                                  step.status === 'issue' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
-                                }`}>
-                                  <p className={`font-semibold ${
-                                    step.status === 'issue' ? 'text-red-700' : 'text-green-700'
-                                  }`}>Comment:</p>
-                                  <p className={`text-sm ${
-                                    step.status === 'issue' ? 'text-red-600' : 'text-green-600'
-                                  }`}>{step.comment}</p>
+                                <div className={`p-3 rounded-lg border ${step.status === 'issue' || step.status === 'rejected' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
+                                  }`}>
+                                  <p className={`font-semibold ${step.status === 'issue' || step.status === 'rejected' ? 'text-red-700' : 'text-green-700'
+                                    }`}>Comment:</p>
+                                  <p className={`text-sm ${step.status === 'issue' || step.status === 'rejected' ? 'text-red-600' : 'text-green-600'
+                                    }`}>{step.comment}</p>
                                 </div>
                               )}
-                              
+
                               <div className="text-xs text-gray-500 mt-3 grid grid-cols-2 gap-4">
                                 <div>
                                   <p>Order: #{step.order}</p>
