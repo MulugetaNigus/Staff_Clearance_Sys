@@ -67,6 +67,7 @@ const EnhancedUserManagement: React.FC = () => {
   const [newUser, setNewUser] = useState<CreateUserData>({
     name: '',
     email: '',
+    password: '',
     role: 'AcademicStaff',
     department: '',
     contactInfo: '',
@@ -97,7 +98,7 @@ const EnhancedUserManagement: React.FC = () => {
       toastUtils.dismiss(loadingToast);
       toastUtils.success('User created successfully!');
       fetchUsers();
-      setNewUser({ name: '', email: '', role: 'AcademicStaff', department: '', contactInfo: '' });
+      setNewUser({ name: '', email: '', password: '', role: 'AcademicStaff', department: '', contactInfo: '' });
       setShowCreateForm(false);
     } catch (error: any) {
       console.error('Failed to create user:', error);
@@ -244,6 +245,18 @@ const EnhancedUserManagement: React.FC = () => {
                   placeholder="Enter contact information"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter password (min 6 chars)"
+                  minLength={6}
+                />
+              </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
                 <select
@@ -350,8 +363,8 @@ const EnhancedUserManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
                         }`}>
                         {user.isActive ? 'Active' : 'Inactive'}
                       </span>
@@ -360,8 +373,8 @@ const EnhancedUserManagement: React.FC = () => {
                       <button
                         onClick={() => handleToggleStatus(user._id)}
                         className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors duration-200 ${user.isActive
-                            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                            : 'bg-green-100 text-green-800 hover:bg-green-200'
+                          ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                          : 'bg-green-100 text-green-800 hover:bg-green-200'
                           }`}
                       >
                         {user.isActive ? 'Deactivate' : 'Activate'}
