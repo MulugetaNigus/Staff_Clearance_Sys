@@ -5,6 +5,7 @@ import API from './api';
 export interface CreateUserData {
   name: string;
   email: string;
+  password: string;
   role: string;
   department: string;
   contactInfo: string;

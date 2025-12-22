@@ -732,7 +732,7 @@ const archiveRequest = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
 
   // Verify user is Records Archives Officer
-  if (req.user.role !== 'RecordsArchivesReviewer') {
+  if (req.user.role !== 'RecordsArchivesOfficerReviewer') {
     return next(new AppError('Only Records and Archives Officer can archive requests', 403));
   }
 
@@ -744,9 +744,17 @@ const archiveRequest = asyncHandler(async (req, res, next) => {
   // Find archive step
   const archiveStep = await ClearanceStep.findOne({
     requestId,
-    reviewerRole: 'RecordsArchivesReviewer',
+    reviewerRole: 'RecordsArchivesOfficerReviewer',
     order: 13
   });
+
+  if (archiveStep) {
+    archiveStep.status = 'cleared';
+    archiveStep.reviewedBy = userId;
+    archiveStep.signature = signature;
+    archiveStep.lastUpdatedAt = new Date();
+    await archiveStep.save();
+  }
 
   if (!archiveStep || !archiveStep.canProcess) {
     return next(new AppError('Cannot archive request. Dependencies not met.', 400));

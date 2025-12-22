@@ -33,7 +33,7 @@ router.route('/requests/:id/approve-initial').put(protect, authorize('AcademicVi
 router.route('/requests/:id/reject-initial').put(protect, authorize('AcademicVicePresident'), rejectInitialRequest);
 router.route('/requests/:id/approve-final').put(protect, authorize('AcademicVicePresident'), approveFinalRequest);
 router.route('/requests/:id/reject-final').put(protect, authorize('AcademicVicePresident'), rejectFinalRequest);
-router.route('/requests/:id/archive').put(protect, authorize('RecordsArchivesReviewer'), archiveRequest);
+router.route('/requests/:id/archive').put(protect, authorize('RecordsArchivesOfficerReviewer'), archiveRequest);
 router.route('/requests/:id').get(protect, getClearanceRequestById);
 router.route('/steps/:id').put(protect, updateClearanceStep);
 router.route('/steps/:id/hide').put(protect, hideClearanceStep);

@@ -164,7 +164,7 @@ const ReviewerDashboard: React.FC = () => {
                             {step.requestId?.referenceCode || 'Unknown Request'}
                           </h3>
                           <p className="text-sm text-gray-500">
-                            Submitted: {step.requestId?.createdAt ? new Date(step.requestId.createdAt).toLocaleDateString() : 'N/A'}
+                            Submitted: {step.requestId?.createdAt ? new Date(step.requestId.createdAt).toLocaleString() : 'N/A'}
                           </p>
                         </div>
                       </div>

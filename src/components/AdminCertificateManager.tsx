@@ -142,7 +142,7 @@ const AdminCertificateManager: React.FC = () => {
                                             {req.referenceCode}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {new Date(req.completedAt).toLocaleDateString()}
+                                            {new Date(req.completedAt).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right">
                                             <Button

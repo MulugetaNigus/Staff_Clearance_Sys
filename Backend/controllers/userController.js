@@ -4,13 +4,21 @@ const jwt = require('jsonwebtoken');
 
 // Create new user by admin
 exports.createUser = async (req, res) => {
-  const { name, email, role, department, contactInfo } = req.body;
+  const { name, email, password, role, department, contactInfo } = req.body;
 
   try {
-    if (!name || !email || !role || !department || !contactInfo) {
+    if (!name || !email || !password || !role || !department || !contactInfo) {
       return res.status(400).json({
         success: false,
-        message: 'All fields are required (name, email, role, department, contactInfo)'
+        message: 'All fields are required (name, email, password, role, department, contactInfo)'
+      });
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long'
       });
     }
 
@@ -24,7 +32,6 @@ exports.createUser = async (req, res) => {
     }
 
     const username = User.generateUsername(name);
-    const password = User.generatePassword();
 
     const newUser = new User({
       name,

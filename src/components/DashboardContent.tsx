@@ -206,7 +206,7 @@ const DashboardOverviewComponent: React.FC<{ setActiveTab: (tab: string) => void
         <div className="flex items-center mt-4 space-x-4">
           <div className="bg-white rounded-lg px-4 py-2 shadow-md">
             <span className="text-sm text-gray-500">Today</span>
-            <p className="text-lg font-semibold text-gray-900">{new Date().toLocaleDateString()}</p>
+            <p className="text-lg font-semibold text-gray-900">{new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
           </div>
           <div className="bg-white rounded-lg px-4 py-2 shadow-md">
             <span className="text-sm text-gray-500">Status</span>

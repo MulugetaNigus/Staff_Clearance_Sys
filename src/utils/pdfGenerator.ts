@@ -4,7 +4,7 @@ import QRCode from 'qrcode';
 // Load logo dynamically from public assets
 const loadWoldiaLogo = async (): Promise<string> => {
   try {
-    const logoPath = '/assets/woldia-logo.png';
+    const logoPath = '/assets/logo.jpeg';
     const response = await fetch(logoPath);
     if (!response.ok) {
       console.warn('Logo not found, using fallback');
@@ -40,26 +40,26 @@ const validateAndFixBase64Image = (base64String: string): string | null => {
       console.warn('Invalid data URL format');
       return null;
     }
-    
+
     // Extract the base64 part
     const base64Data = base64String.split(',')[1];
     if (!base64Data) {
       console.warn('No base64 data found');
       return null;
     }
-    
+
     // Validate base64 format - should only contain valid base64 characters
     if (!base64Data.match(/^[A-Za-z0-9+/]*={0,2}$/)) {
       console.warn('Invalid base64 characters found');
       return null;
     }
-    
+
     // Check if base64 length is reasonable (not too short)
     if (base64Data.length < 100) {
       console.warn('Base64 data too short, likely incomplete');
       return null;
     }
-    
+
     // Try to decode base64 to validate it
     try {
       atob(base64Data);
@@ -67,19 +67,19 @@ const validateAndFixBase64Image = (base64String: string): string | null => {
       console.warn('Invalid base64 encoding:', e);
       return null;
     }
-    
+
     // If PNG, check for PNG signature (89 50 4E 47)
     if (base64String.includes('data:image/png')) {
       const decoded = atob(base64Data);
       const pngSignature = decoded.substring(0, 4);
       const expectedSignature = String.fromCharCode(0x89, 0x50, 0x4E, 0x47);
-      
+
       if (pngSignature !== expectedSignature) {
         console.warn('PNG signature validation failed');
         return null;
       }
     }
-    
+
     return base64String;
   } catch (error) {
     console.error('Error validating base64 image:', error);
@@ -135,7 +135,7 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
   try {
     const logoBase64 = await loadWoldiaLogo();
     if (logoBase64 && logoBase64.length > 100) {
-      doc.addImage(logoBase64, 'PNG', margin, yPos, 30, 30);
+      doc.addImage(logoBase64, 'JPEG', margin, yPos, 30, 30);
     } else {
       // Fallback: Draw a placeholder rectangle
       doc.setDrawColor(150, 150, 150);
@@ -202,10 +202,10 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
   // Table Headers
   const colWidths = [10, 80, 30, 25, 25]; // Adjusted widths: #, Department, Status, Signed Date, Signature
   const colPositions = [
-    margin, 
-    margin + colWidths[0], 
-    margin + colWidths[0] + colWidths[1], 
-    margin + colWidths[0] + colWidths[1] + colWidths[2], 
+    margin,
+    margin + colWidths[0],
+    margin + colWidths[0] + colWidths[1],
+    margin + colWidths[0] + colWidths[1] + colWidths[2],
     margin + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3]
   ];
   const rowHeight = 8;
@@ -259,24 +259,24 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
     // Enhanced signature handling with validation
     const signatureKey = step.department.toLowerCase().replace(/[^a-z0-9]/g, '');
     const roleKey = step.reviewerRole?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
-    
+
     // Map actual signature keys from your testing data to department names and roles
     const signatureKeyMapping: { [key: string]: string } = {
       'vicepresidentforacademicresearchcommunityengagement': 'vpinitialsignature',
-      'academicdepartmenthead': 'departmentheadapproval', 
+      'academicdepartmenthead': 'departmentheadapproval',
       'collegehead': 'collegeheadapproval',
       'academicvicepresidentfinaloversight': 'academicvpinitialvalidation'
     };
-    
+
     // Try multiple signature lookup strategies
     const mappedKey = signatureKeyMapping[signatureKey] || signatureKey;
-    
+
     console.log(`🔍 Searching for signature - Department: "${step.department}" → DeptKey: "${signatureKey}" → RoleKey: "${roleKey}" → Mapped: "${mappedKey}"`);
     console.log(`📋 Available signature keys:`, Object.keys(signatures));
-    
+
     try {
       let signatureToUse = null;
-      
+
       // Priority: step.signature first, then role-based, then mapped, then department-based
       if (step.signature && typeof step.signature === 'string' && step.signature.length > 50) {
         signatureToUse = step.signature;
@@ -291,23 +291,23 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
         signatureToUse = signatures[signatureKey];
         console.log(`✅ Using department signature for ${step.department}, key: ${signatureKey}`);
       }
-      
+
       if (signatureToUse && signatureToUse.startsWith('data:image')) {
         // Validate and process base64 image
         const validatedSignature = validateAndFixBase64Image(signatureToUse);
-        
+
         if (validatedSignature) {
           // Extract image format more reliably
           const formatMatch = validatedSignature.match(/data:image\/(png|jpg|jpeg|gif|bmp|webp)/i);
           let imgFormat = 'PNG'; // Default fallback
-          
+
           if (formatMatch) {
             imgFormat = formatMatch[1].toUpperCase();
             if (imgFormat === 'JPG') imgFormat = 'JPEG'; // jsPDF uses JPEG not JPG
           }
-          
+
           console.log(`Adding validated ${imgFormat} signature for ${step.department}`);
-          
+
           // Add image with proper error handling
           doc.addImage(validatedSignature, imgFormat, colPositions[4] + 2, yPos + 1, 20, 6);
         } else {
@@ -330,11 +330,11 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
     }
     yPos += rowHeight;
   });
-  
+
 
   yPos += 23;
 
-  
+
 
   // SECURITY/FOOTER SECTION
   if (yPos + 40 > pageHeight - margin) {
@@ -354,7 +354,7 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
     verificationUrl: `${baseUrl}/verify/${request.referenceCode}`,
     generatedAt: new Date().toISOString()
   };
-  
+
   try {
     const qrCodeDataUrl = await generateQrCode(JSON.stringify(verificationData));
     if (qrCodeDataUrl) {

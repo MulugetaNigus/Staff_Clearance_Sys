@@ -15,16 +15,6 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // MOCK USER FOR TESTING (since middleware is removed)
-    if (!req.user) {
-      req.user = {
-        _id: 'mock_admin_id',
-        role: 'SystemAdmin', // Mock as Admin to bypass checks
-        name: 'Test Admin'
-      };
-      console.log('⚠️ USING MOCK USER FOR TESTING');
-    }
-
     const userId = req.user._id;
     const userRole = req.user.role;
 
@@ -85,7 +75,7 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
 
     // Authorization check - staff can download their own certificates
     // Admins and specific reviewers can download any certificate
-    const authorizedRoles = ['SystemAdmin', 'RecordsArchivesReviewer', 'AcademicVicePresident', 'AcademicStaff'];
+    const authorizedRoles = ['SystemAdmin', 'RecordsArchivesOfficerReviewer', 'AcademicVicePresident', 'AcademicStaff'];
     // const userRole = req.user.role; // Now defined at the top
     // const userId = req.user._id; // Now defined at the top
 
@@ -145,13 +135,23 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
 
       // University Logo - Load dynamically
       try {
-        // Updated path to user provided logo
-        const logoPath = path.join(__dirname, '../../src/assets/logo.jpeg');
+        // Path to the logo image (login page logo)
+        const logoPath = path.join(__dirname, '../../public/assets/logo.jpeg');
+        const srcLogoPath = path.join(__dirname, '../../src/assets/logo.jpeg');
+
+        let finalLogoPath = null;
         if (fs.existsSync(logoPath)) {
-          const logoBase64 = fs.readFileSync(logoPath, { encoding: 'base64' });
+          finalLogoPath = logoPath;
+        } else if (fs.existsSync(srcLogoPath)) {
+          finalLogoPath = srcLogoPath;
+        }
+
+        if (finalLogoPath) {
+          const logoBase64 = fs.readFileSync(finalLogoPath, { encoding: 'base64' });
+          // Add logo to top left (margin, 5)
           doc.addImage(`data:image/jpeg;base64,${logoBase64}`, 'JPEG', margin, 5, 35, 35);
         } else {
-          console.warn('Logo file not found at:', logoPath);
+          console.warn('Logo file not found at:', logoPath, 'or', srcLogoPath);
           // Fallback placeholder
           doc.setDrawColor(200, 200, 200);
           doc.circle(margin + 17, 22, 17, 'S');
@@ -214,7 +214,14 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       const department = request.initiatedBy.department || 'N/A';
       const staffId = request.initiatedBy.staffId || 'N/A';
       const referenceCode = request.referenceCode;
-      const generatedDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      const issueDate = request.completedAt || request.updatedAt || new Date();
+      const generatedDate = new Date(issueDate).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
 
       // Info Box Background
       doc.setDrawColor(200, 200, 200);
@@ -320,7 +327,14 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
 
         doc.text(step.reviewedBy?.name || 'System', currentX + 2, yPos + 5); currentX += colWidths[2];
 
-        const dateStr = step.approvedAt || step.updatedAt ? new Date(step.approvedAt || step.updatedAt).toLocaleDateString() : '-';
+        const stepDate = step.lastUpdatedAt || step.updatedAt || step.approvedAt;
+        const dateStr = stepDate ? new Date(stepDate).toLocaleString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : '-';
         doc.text(dateStr, currentX + 2, yPos + 5); currentX += colWidths[3];
 
         // Status with color
