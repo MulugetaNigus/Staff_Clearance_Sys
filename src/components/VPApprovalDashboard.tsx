@@ -118,6 +118,7 @@ const VPApprovalDashboard: React.FC = () => {
 
     setApprovalInitiated(true);
     try {
+      console.log(`Attempting to reject ${type} request ${id} with reason: ${rejectionReason}`);
       let response;
       if (type === 'initial') {
         response = await clearanceService.rejectInitialRequest(id, rejectionReason);
@@ -125,7 +126,9 @@ const VPApprovalDashboard: React.FC = () => {
         response = await clearanceService.rejectFinalRequest(id, rejectionReason);
       }
 
-      if (response.success) {
+      console.log('Rejection response:', response);
+
+      if (response && response.success) {
         toastUtils.success(`Request rejected successfully.`);
         if (type === 'initial') {
           setInitialApprovalRequests(initialApprovalRequests.filter(req => req._id !== id));
@@ -135,9 +138,11 @@ const VPApprovalDashboard: React.FC = () => {
         setRejectingRequestId(null);
         setRejectionReason('');
       } else {
-        toastUtils.error(response.message || 'Failed to reject request.');
+        console.error('Rejection failed:', response);
+        toastUtils.error(response?.message || 'Failed to reject request.');
       }
     } catch (error) {
+      console.error('Error in rejection flow:', error);
       toastUtils.error('An error occurred while rejecting the request.');
     } finally {
       setApprovalInitiated(false);
