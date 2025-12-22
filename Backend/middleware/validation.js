@@ -18,12 +18,11 @@ exports.validateUserCreation = [
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Name must be between 2 and 100 characters'),
-  
+
   body('email')
     .isEmail()
-    .normalizeEmail()
     .withMessage('Please provide a valid email address'),
-  
+
   body('role')
     .isIn([
       'AcademicStaff', 'SystemAdmin', 'AcademicVicePresident', 'Registrar', 'HumanResources',
@@ -38,12 +37,12 @@ exports.validateUserCreation = [
       'CaseExecutiveReviewer', 'HRDevelopmentReviewer'
     ])
     .withMessage('Invalid role provided'),
-  
+
   body('department')
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Department must be between 2 and 100 characters'),
-  
+
   handleValidationErrors
 ];
 
@@ -54,13 +53,12 @@ exports.validateUserUpdate = [
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Name must be between 2 and 100 characters'),
-  
+
   body('email')
     .optional()
     .isEmail()
-    .normalizeEmail()
     .withMessage('Please provide a valid email address'),
-  
+
   body('role')
     .optional()
     .isIn([
@@ -76,13 +74,13 @@ exports.validateUserUpdate = [
       'CaseExecutiveReviewer', 'HRDevelopmentReviewer'
     ])
     .withMessage('Invalid role provided'),
-  
+
   body('department')
     .optional()
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Department must be between 2 and 100 characters'),
-  
+
   handleValidationErrors
 ];
 
@@ -91,17 +89,17 @@ exports.validateReportGeneration = [
   body('reportType')
     .isIn(['clearance-progress', 'completion-stats', 'user-activity', 'system-health'])
     .withMessage('Invalid report type'),
-  
+
   body('startDate')
     .optional()
     .isISO8601()
     .withMessage('Start date must be a valid date'),
-  
+
   body('endDate')
     .optional()
     .isISO8601()
     .withMessage('End date must be a valid date'),
-  
+
   handleValidationErrors
 ];
 
@@ -109,12 +107,11 @@ exports.validateReportGeneration = [
 exports.validateLogin = [
   body('email')
     .isEmail()
-    .normalizeEmail()
     .withMessage('Please provide a valid email address'),
-  
+
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
-  
+
   handleValidationErrors
 ];
