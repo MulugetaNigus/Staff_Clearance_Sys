@@ -79,4 +79,14 @@ export const clearanceService = {
     const response = await API.get('/clearance/requests/cleared-academic-staff');
     return response.data;
   },
+
+  undoVPInitialDecision: async (id: string) => {
+    const response = await API.put(`/clearance/requests/${id}/undo-initial`);
+    return response.data;
+  },
+
+  undoVPFinalDecision: async (id: string) => {
+    const response = await API.put(`/clearance/requests/${id}/undo-final`);
+    return response.data;
+  },
 };
