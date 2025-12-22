@@ -336,8 +336,9 @@ const getRequestsForVP = asyncHandler(async (req, res, next) => {
 
   try {
     // Get requests that need initial VP approval or final VP approval
+    // We include 'rejected' and 'vp_initial_approval' to allow VP to change their decision
     const initialApprovalRequests = await ClearanceRequest.find({
-      status: 'initiated'
+      status: { $in: ['initiated', 'rejected', 'vp_initial_approval'] }
     })
       .populate('initiatedBy', 'name email department')
       .sort({ createdAt: -1 });
