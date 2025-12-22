@@ -192,7 +192,7 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
 });
 
 const rejectInitialRequest = asyncHandler(async (req, res, next) => {
-  const { requestId } = req.params;
+  const { id: requestId } = req.params;
   const { rejectionReason } = req.body;
   const userId = req.user._id;
 
@@ -480,7 +480,7 @@ const getMyReviewSteps = asyncHandler(async (req, res, next) => {
 });
 
 const hideClearanceStep = asyncHandler(async (req, res, next) => {
-  const { stepId } = req.params;
+  const { id: stepId } = req.params;
   const userId = req.user._id;
 
   try {
@@ -658,7 +658,7 @@ const checkAndCompleteRequest = async (requestId) => {
 
 // Final VP approval (second signature)
 const approveFinalRequest = asyncHandler(async (req, res, next) => {
-  const { requestId } = req.params;
+  const { id: requestId } = req.params;
   const { signature } = req.body;
   const userId = req.user._id;
 
@@ -727,7 +727,7 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
 
 // Archive request (final step)
 const archiveRequest = asyncHandler(async (req, res, next) => {
-  const { requestId } = req.params;
+  const { id: requestId } = req.params;
   const { signature } = req.body;
   const userId = req.user._id;
 
