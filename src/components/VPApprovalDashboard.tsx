@@ -38,7 +38,7 @@ const VPApprovalDashboard: React.FC = () => {
         if (response.success) {
           // Separate requests by VP approval type
           const initial = response.data.filter((req: ClearanceRequest) =>
-            req.status === 'initiated'
+            req.status === 'initiated' || req.status === 'rejected' || req.status === 'vp_initial_approval'
           );
           const final = response.data.filter((req: ClearanceRequest) => {
             // Requests ready for final VP approval (all departments completed except final VP step)
@@ -411,8 +411,8 @@ const VPApprovalDashboard: React.FC = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
                         <p><strong>Purpose:</strong> {request.purpose}</p>
-                        <p><strong>Department:</strong> {request.formData.department}</p>
-                        <p><strong>Teacher ID:</strong> {request.formData.teacherId}</p>
+                        <p><strong>Department:</strong> {request.formData?.department || 'N/A'}</p>
+                        <p><strong>Teacher ID:</strong> {request.formData?.teacherId || 'N/A'}</p>
                         <p><strong>Initially Approved:</strong> {request.vpInitialSignedAt ? new Date(request.vpInitialSignedAt).toLocaleString() : 'N/A'}</p>
                       </div>
                     </div>

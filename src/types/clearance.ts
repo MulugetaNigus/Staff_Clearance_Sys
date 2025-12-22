@@ -51,13 +51,15 @@ export interface ClearanceRequest {
   hrSignature?: string;
   vpInitialSignature?: string;
   vpFinalSignature?: string;
-  vpInitialSignedAt?: string;
   vpFinalSignedAt?: string;
+  vpInitialSignedAt?: string;
   archivedAt?: string;
-  formData: {
-    purpose: string;
+  formData?: {
     teacherId: string;
     department: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
     fileMetadata?: Array<{ fileName: string; visibility: string }>;
   };
   reviewedBy?: {
