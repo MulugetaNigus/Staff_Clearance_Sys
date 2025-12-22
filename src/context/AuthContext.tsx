@@ -47,7 +47,14 @@ export type UserRole =
   | 'RecordsArchivesReviewer'
   | 'FacilitiesReviewer'
   | 'CaseExecutiveReviewer'
-  | 'HRDevelopmentReviewer';
+  | 'HRDevelopmentReviewer'
+  // Workflow.js critical roles (Orders 5-13)
+  | 'ICTExecutiveReviewer'
+  | 'PropertyExecutiveDirectorReviewer'
+  | 'SeniorFinanceSpecialistReviewer'
+  | 'InternalAuditExecutiveDirectorReviewer'
+  | 'HRCompetencyDevelopmentReviewer'
+  | 'RecordsArchivesOfficerReviewer';
 
 export interface AuthState {
   user: User | null;

@@ -47,19 +47,35 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 - **Expected Result**: Department step marked as cleared
 
 #### Test Case 1.4: College Head Approval
-- **Role**: College Head
+- **Role**: CollegeReviewer
 - **Dependencies**: Department Head approval completed
 - **Steps**:
   1. Login as College Head
   2. Review available requests
   3. Process approval with signature
-- **Expected Result**: Stage 1 completion triggers Stage 2 availability
+- **Expected Result**: College step cleared, Order 4 parallel departments become available
+
+### 1.5 Workflow Order 4: Parallel Department Clearances
+
+#### Test Case 1.5: Parallel Department Approvals
+- **Roles** (16 parallel reviewers):
+  - RegistrarReviewer, StudentDeanReviewer, DistanceEducationReviewer
+  - ResearchDirectorateReviewer, EmployeeFinanceReviewer, LibraryReviewer
+  - GeneralServiceReviewer, PropertySpecialist1Reviewer, PropertySpecialist2Reviewer
+  - TreasurerReviewer, EthicsReviewer, ICTReviewer
+  - CommunityEngagementReviewer, HRManagementReviewer, FacilitiesReviewer, CaseExecutiveReviewer
+- **Dependencies**: College Head approval completed (Order 3)
+- **Steps**:
+  1. Login as any of the parallel reviewers
+  2. Review and process clearance request
+  3. Each reviewer can work independently
+- **Expected Result**: All 16 departments must clear before Stage 2 begins
 
 ### 2. Workflow Stage 2: ICT & Property Clearances
 
 #### Test Case 2.1: ICT Executive Equipment & Email Review
-- **Role**: ICTExecutive
-- **Dependencies**: Stage 1 completed (All other departments)
+- **Role**: ICTExecutiveReviewer
+- **Dependencies**: All Order 4 parallel departments completed
 - **Steps**:
   1. Login as ICT Executive
   2. Review equipment/laptops assigned to staff
@@ -69,7 +85,7 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 - **Expected Result**: ICT step cleared, Store officers become available
 
 #### Test Case 2.2: Store 1 Officer Clearance
-- **Role**: Store1Officer
+- **Role**: Store1Reviewer
 - **Dependencies**: ICT Executive approval completed
 - **Steps**:
   1. Login as Store 1 Officer
@@ -78,7 +94,7 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 - **Expected Result**: Store 1 step cleared, but interdependent Store 2 still required
 
 #### Test Case 2.3: Store 2 Officer Clearance (Interdependency Test)
-- **Role**: Store2Officer
+- **Role**: Store2Reviewer
 - **Dependencies**: ICT Executive approval completed
 - **Steps**:
   1. Login as Store 2 Officer
@@ -87,7 +103,7 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 - **Expected Result**: Both Store officers completed triggers Property Executive availability
 
 #### Test Case 2.4: Property Executive Director Approval
-- **Role**: PropertyExecutiveDirector
+- **Role**: PropertyExecutiveDirectorReviewer
 - **Dependencies**: ICT Executive AND both Store officers completed
 - **Steps**:
   1. Login as Property Executive Director
@@ -98,7 +114,7 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 ### 3. Workflow Stage 3: Financial Clearances
 
 #### Test Case 3.1: Finance Executive Approval
-- **Role**: FinanceExecutive
+- **Role**: FinanceExecutiveReviewer
 - **Dependencies**: Stage 2 completed
 - **Steps**:
   1. Login as Finance Executive
@@ -107,7 +123,7 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 - **Expected Result**: Finance step cleared
 
 #### Test Case 3.2: Senior Finance Specialist Review
-- **Role**: SeniorFinanceSpecialist
+- **Role**: SeniorFinanceSpecialistReviewer
 - **Dependencies**: Finance Executive approval
 - **Steps**:
   1. Login as Senior Finance Specialist
@@ -116,7 +132,7 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 - **Expected Result**: Senior finance step cleared
 
 #### Test Case 3.3: Internal Audit Executive Director
-- **Role**: InternalAuditExecutiveDirector
+- **Role**: InternalAuditExecutiveDirectorReviewer
 - **Dependencies**: Senior Finance Specialist approval
 - **Steps**:
   1. Login as Internal Audit Executive Director
@@ -126,12 +142,12 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 
 ### 4. Workflow Stage 4: HR and Final VP Approval
 
-#### Test Case 4.1: Human Resource Executive Clearance
-- **Role**: HumanResourceExecutive
+#### Test Case 4.1: HR Competency Development Team Leader
+- **Role**: HRCompetencyDevelopmentReviewer
 - **Dependencies**: Stage 3 completed
 - **Steps**:
-  1. Login as HR Executive
-  2. Review HR obligations
+  1. Login as HR Competency Development Team Leader
+  2. Review training agreements and employee records
   3. Process HR clearance
 - **Expected Result**: HR step cleared, VP final approval available
 
@@ -149,7 +165,7 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 ### 5. Workflow Stage 5: Archiving
 
 #### Test Case 5.1: Records and Archives Officer
-- **Role**: RecordsArchivesReviewer
+- **Role**: RecordsArchivesOfficerReviewer
 - **Dependencies**: All previous stages completed
 - **Steps**:
   1. Login as Records and Archives Officer
@@ -168,7 +184,7 @@ This guide provides comprehensive testing procedures for the enhanced academic s
 - **Expected Result**: Access denied error
 
 ### Edge Case 3: ICT Executive Dependency
-- **Test**: Store officers try to process before ICT Executive approval
+- **Test**: Store officers try to process before ICTExecutiveReviewer approval
 - **Expected Result**: Store officer steps remain unavailable until ICT Executive completes
 
 ### Edge Case 4: Interdependency Breaking
