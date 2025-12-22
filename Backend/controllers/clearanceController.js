@@ -211,9 +211,19 @@ const rejectInitialRequest = asyncHandler(async (req, res, next) => {
       return next(new AppError('Clearance request not found', 404));
     }
 
-    if (request.status !== 'initiated') {
-      return next(new AppError('Request is not in initiated status', 400));
+    if (request.status !== 'initiated' && request.status !== 'vp_initial_approval') {
+      return next(new AppError('Request is not in initiated or initial approval status', 400));
     }
+
+    // Update the VP initial step to rejected if it exists
+    await ClearanceStep.findOneAndUpdate(
+      { requestId, reviewerRole: 'AcademicVicePresident', order: 1 },
+      {
+        status: 'rejected',
+        reviewedBy: userId,
+        lastUpdatedAt: new Date()
+      }
+    );
 
     // Update request status
     request.status = 'rejected';
