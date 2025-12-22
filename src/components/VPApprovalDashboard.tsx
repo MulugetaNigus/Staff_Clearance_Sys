@@ -131,9 +131,13 @@ const VPApprovalDashboard: React.FC = () => {
       if (response && response.success) {
         toastUtils.success(`Request rejected successfully.`);
         if (type === 'initial') {
-          setInitialApprovalRequests(initialApprovalRequests.filter(req => req._id !== id));
+          setInitialApprovalRequests(initialApprovalRequests.map(req => 
+            req._id === id ? { ...req, status: 'rejected' } : req
+          ));
         } else {
-          setFinalApprovalRequests(finalApprovalRequests.filter(req => req._id !== id));
+          setFinalApprovalRequests(finalApprovalRequests.map(req => 
+            req._id === id ? { ...req, status: 'rejected' } : req
+          ));
         }
         setRejectingRequestId(null);
         setRejectionReason('');
@@ -239,7 +243,9 @@ const VPApprovalDashboard: React.FC = () => {
                           <h3 className="text-2xl font-bold text-gray-900 mb-1">{request.initiatedBy?.name || 'Unknown User'}</h3>
                           <p className="text-sm text-gray-500">ID: {request.referenceCode}</p>
                         </div>
-                        <span className={`px-4 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800`}>
+                        <span className={`px-4 py-1 text-xs font-semibold rounded-full ${
+                          request.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
                           {request.status.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
@@ -401,8 +407,10 @@ const VPApprovalDashboard: React.FC = () => {
                           <p className="text-sm text-gray-500">ID: {request.referenceCode}</p>
                         </div>
                         <div className="flex flex-col space-y-2">
-                          <span className="px-4 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-                            READY FOR FINAL OVERSIGHT
+                          <span className={`px-4 py-1 text-xs font-semibold rounded-full ${
+                            request.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {request.status === 'rejected' ? 'REJECTED' : 'READY FOR FINAL OVERSIGHT'}
                           </span>
                           <span className="px-4 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                             Initially Validated ✓

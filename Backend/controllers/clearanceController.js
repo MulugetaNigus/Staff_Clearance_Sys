@@ -139,8 +139,8 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
     return next(new AppError('Clearance request not found', 404));
   }
 
-  if (request.status !== 'initiated') {
-    return next(new AppError('Request is not in initiated status', 400));
+  if (request.status !== 'initiated' && request.status !== 'rejected' && request.status !== 'vp_initial_approval') {
+    return next(new AppError('Request is not in a valid status for initial approval', 400));
   }
 
   // Update the VP initial step
@@ -211,8 +211,8 @@ const rejectInitialRequest = asyncHandler(async (req, res, next) => {
       return next(new AppError('Clearance request not found', 404));
     }
 
-    if (request.status !== 'initiated' && request.status !== 'vp_initial_approval') {
-      return next(new AppError('Request is not in initiated or initial approval status', 400));
+    if (request.status !== 'initiated' && request.status !== 'vp_initial_approval' && request.status !== 'rejected') {
+      return next(new AppError('Request is not in a valid status for rejection', 400));
     }
 
     // Update the VP initial step to rejected if it exists
@@ -730,6 +730,9 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
     description: `Academic VP provided final oversight approval for clearance request ${request.referenceCode}`,
   });
 
+  // Check if all steps are completed and update request status
+  await checkAndCompleteRequest(requestId);
+
   res.status(200).json({
     success: true,
     message: 'Final VP approval completed successfully',
@@ -876,7 +879,7 @@ const rejectFinalRequest = asyncHandler(async (req, res, next) => {
       return next(new AppError('Clearance request not found', 404));
     }
 
-    if (request.status !== 'in_progress') {
+    if (request.status !== 'in_progress' && request.status !== 'rejected') {
       return next(new AppError('Request is not in the correct status for final rejection', 400));
     }
 
