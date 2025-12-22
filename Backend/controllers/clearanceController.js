@@ -139,9 +139,11 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
     return next(new AppError('Clearance request not found', 404));
   }
 
-  if (request.status !== 'initiated' && request.status !== 'rejected' && request.status !== 'vp_initial_approval') {
+  if (request.status !== 'initiated' && request.status !== 'rejected') {
     return next(new AppError('Request is not in a valid status for initial approval', 400));
   }
+
+  const isDecisionChange = request.status === 'rejected';
 
   // Update the VP initial step
   const vpInitialStep = await ClearanceStep.findOneAndUpdate(
@@ -164,6 +166,14 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
   request.vpInitialSignature = signature;
   request.vpInitialSignedAt = new Date();
   request.initialApprovedAt = new Date();
+
+  // Clear rejection data if this was a decision change
+  if (isDecisionChange) {
+    request.rejectionReason = undefined;
+    request.rejectedAt = undefined;
+    request.reviewedBy = undefined;
+  }
+
   await request.save();
 
   // Update workflow - make next steps available
@@ -180,8 +190,10 @@ const approveInitialRequest = asyncHandler(async (req, res, next) => {
 
   await ActivityLog.create({
     userId,
-    action: 'INITIAL_APPROVAL',
-    description: `Academic VP provided initial validation for clearance request ${request.referenceCode}`,
+    action: isDecisionChange ? 'VP_INITIAL_DECISION_CHANGE' : 'INITIAL_APPROVAL',
+    description: isDecisionChange
+      ? `Academic VP changed decision to APPROVED for clearance request ${request.referenceCode}`
+      : `Academic VP provided initial validation for clearance request ${request.referenceCode}`,
   });
 
   res.status(200).json({
@@ -211,9 +223,11 @@ const rejectInitialRequest = asyncHandler(async (req, res, next) => {
       return next(new AppError('Clearance request not found', 404));
     }
 
-    if (request.status !== 'initiated' && request.status !== 'vp_initial_approval' && request.status !== 'rejected') {
-      return next(new AppError('Request is not in a valid status for rejection', 400));
+    if (request.status !== 'initiated' && request.status !== 'vp_initial_approval') {
+      return next(new AppError('Request is not in a valid status for initial rejection', 400));
     }
+
+    const isDecisionChange = request.status === 'vp_initial_approval';
 
     // Update the VP initial step to rejected if it exists
     await ClearanceStep.findOneAndUpdate(
@@ -235,8 +249,10 @@ const rejectInitialRequest = asyncHandler(async (req, res, next) => {
 
     await ActivityLog.create({
       userId,
-      action: 'VP_INITIAL_REJECTION',
-      description: `Academic VP rejected clearance request ${request.referenceCode}: ${rejectionReason}`,
+      action: isDecisionChange ? 'VP_INITIAL_DECISION_CHANGE' : 'VP_INITIAL_REJECTION',
+      description: isDecisionChange
+        ? `Academic VP changed decision to REJECTED for clearance request ${request.referenceCode}: ${rejectionReason}`
+        : `Academic VP rejected clearance request ${request.referenceCode}: ${rejectionReason}`,
     });
 
     res.status(200).json({
@@ -696,9 +712,11 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
     return next(new AppError('VP final step not found', 404));
   }
 
-  if (!vpFinalStep.canProcess) {
+  if (!vpFinalStep.canProcess && request.status !== 'rejected') {
     return next(new AppError('Cannot process final approval. Dependencies not met.', 400));
   }
+
+  const isDecisionChange = request.status === 'rejected';
 
   // Update the VP final step
   vpFinalStep.status = 'cleared';
@@ -710,6 +728,14 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
   // Update request with VP final signature
   request.vpFinalSignature = signature;
   request.vpFinalSignedAt = new Date();
+
+  // Clear rejection data if this was a decision change
+  if (isDecisionChange) {
+    request.rejectionReason = undefined;
+    request.rejectedAt = undefined;
+    request.reviewedBy = undefined;
+  }
+
   await request.save();
 
   // Update workflow availability
@@ -726,12 +752,11 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
 
   await ActivityLog.create({
     userId,
-    action: 'VP_FINAL_APPROVAL',
-    description: `Academic VP provided final oversight approval for clearance request ${request.referenceCode}`,
+    action: isDecisionChange ? 'VP_FINAL_DECISION_CHANGE' : 'VP_FINAL_APPROVAL',
+    description: isDecisionChange
+      ? `Academic VP changed decision to APPROVED at final oversight for clearance request ${request.referenceCode}`
+      : `Academic VP provided final oversight approval for clearance request ${request.referenceCode}`,
   });
-
-  // Check if all steps are completed and update request status
-  await checkAndCompleteRequest(requestId);
 
   res.status(200).json({
     success: true,
@@ -879,9 +904,11 @@ const rejectFinalRequest = asyncHandler(async (req, res, next) => {
       return next(new AppError('Clearance request not found', 404));
     }
 
-    if (request.status !== 'in_progress' && request.status !== 'rejected') {
-      return next(new AppError('Request is not in the correct status for final rejection', 400));
+    if (request.status !== 'in_progress' && request.status !== 'cleared') {
+      return next(new AppError('Request is not in a valid status for final rejection', 400));
     }
+
+    const isDecisionChange = request.status === 'cleared';
 
     // Update request status
     request.status = 'rejected';
@@ -901,8 +928,10 @@ const rejectFinalRequest = asyncHandler(async (req, res, next) => {
 
     await ActivityLog.create({
       userId,
-      action: 'VP_FINAL_REJECTION',
-      description: `Academic VP rejected clearance request ${request.referenceCode} at final oversight: ${rejectionReason}`,
+      action: isDecisionChange ? 'VP_FINAL_DECISION_CHANGE' : 'VP_FINAL_REJECTION',
+      description: isDecisionChange
+        ? `Academic VP changed decision to REJECTED at final oversight for clearance request ${request.referenceCode}: ${rejectionReason}`
+        : `Academic VP rejected clearance request ${request.referenceCode} at final oversight: ${rejectionReason}`,
     });
 
     res.status(200).json({
@@ -915,6 +944,117 @@ const rejectFinalRequest = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Undo VP Initial Decision
+const undoVPInitialDecision = asyncHandler(async (req, res, next) => {
+  const { id: requestId } = req.params;
+  const userId = req.user._id;
+
+  if (req.user.role !== 'AcademicVicePresident') {
+    return next(new AppError('Only Academic Vice President can undo decisions', 403));
+  }
+
+  const request = await ClearanceRequest.findById(requestId);
+  if (!request) {
+    return next(new AppError('Clearance request not found', 404));
+  }
+
+  if (request.status !== 'vp_initial_approval' && request.status !== 'rejected') {
+    return next(new AppError('Request is not in a state that can be undone', 400));
+  }
+
+  const oldStatus = request.status;
+
+  // Reset request status
+  request.status = 'initiated';
+  request.vpInitialSignature = undefined;
+  request.vpInitialSignedAt = undefined;
+  request.initialApprovedAt = undefined;
+  request.rejectionReason = undefined;
+  request.rejectedAt = undefined;
+  request.reviewedBy = undefined;
+  await request.save();
+
+  // Reset VP initial step
+  await ClearanceStep.findOneAndUpdate(
+    { requestId, reviewerRole: 'AcademicVicePresident', order: 1 },
+    {
+      status: 'available',
+      reviewedBy: undefined,
+      signature: undefined,
+      comment: undefined,
+      lastUpdatedAt: new Date()
+    }
+  );
+
+  await ActivityLog.create({
+    userId,
+    action: 'VP_INITIAL_UNDO',
+    description: `Academic VP undid ${oldStatus === 'rejected' ? 'rejection' : 'approval'} for clearance request ${request.referenceCode}`,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Decision undid successfully',
+    data: request,
+  });
+});
+
+// Undo VP Final Decision
+const undoVPFinalDecision = asyncHandler(async (req, res, next) => {
+  const { id: requestId } = req.params;
+  const userId = req.user._id;
+
+  if (req.user.role !== 'AcademicVicePresident') {
+    return next(new AppError('Only Academic Vice President can undo decisions', 403));
+  }
+
+  const request = await ClearanceRequest.findById(requestId);
+  if (!request) {
+    return next(new AppError('Clearance request not found', 404));
+  }
+
+  // Final decision can be undone if it's cleared (but not archived) or rejected (at final stage)
+  if (request.status !== 'cleared' && request.status !== 'rejected') {
+    return next(new AppError('Request is not in a state that can be undone', 400));
+  }
+
+  const oldStatus = request.status;
+
+  // Reset request status
+  request.status = 'in_progress';
+  request.vpFinalSignature = undefined;
+  request.vpFinalSignedAt = undefined;
+  request.completedAt = undefined;
+  request.rejectionReason = undefined;
+  request.rejectedAt = undefined;
+  request.reviewedBy = undefined;
+  await request.save();
+
+  // Reset VP final step
+  await ClearanceStep.findOneAndUpdate(
+    { requestId, reviewerRole: 'AcademicVicePresident', vpSignatureType: 'final' },
+    {
+      status: 'available',
+      reviewedBy: undefined,
+      signature: undefined,
+      comment: undefined,
+      lastUpdatedAt: new Date()
+    }
+  );
+
+  await ActivityLog.create({
+    userId,
+    action: 'VP_FINAL_UNDO',
+    description: `Academic VP undid final ${oldStatus === 'rejected' ? 'rejection' : 'approval'} for clearance request ${request.referenceCode}`,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Decision undid successfully',
+    data: request,
+  });
+});
+
 module.exports = {
   createClearanceRequest,
   approveInitialRequest,
@@ -922,6 +1062,8 @@ module.exports = {
   updateClearanceStep,
   approveFinalRequest,
   rejectFinalRequest,
+  undoVPInitialDecision,
+  undoVPFinalDecision,
   archiveRequest,
   getRequestsForVP,
   getClearanceRequests,
