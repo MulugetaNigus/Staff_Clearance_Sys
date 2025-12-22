@@ -40,33 +40,34 @@ const LoginPage: React.FC = () => {
       <div className="w-full max-w-6xl grid md:grid-cols-2 gap-0 bg-white rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
 
         {/* Branding Section - Left Side */}
-        <div className="hidden md:flex flex-col justify-center p-12 bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 text-white relative overflow-hidden">
-          {/* Animated Background */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="hidden md:flex flex-col justify-center p-12 bg-gradient-to-br from-slate-50 via-gray-100 to-slate-100 relative overflow-hidden">
+          {/* Logo Background - More Visible */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <img
+              src="/assets/logo.jpeg"
+              alt=""
+              className="w-[400px] h-[400px] object-contain opacity-35"
+            />
+          </div>
+          {/* Subtle Animated Overlay */}
+          <div className="absolute inset-0 opacity-30">
+            <div className="absolute top-0 left-0 w-72 h-72 bg-blue-200 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-200 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
           </div>
 
           {/* Content */}
           <div className="relative z-10">
-            {/* Logo */}
-            <div className="mb-8 flex items-center gap-3">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-xl">
-                <span className="text-3xl font-bold text-white font-['Plus_Jakarta_Sans_Variable']">WU</span>
-              </div>
-              {/* <Sparkles className="h-8 w-8 text-yellow-300 animate-pulse" /> */}
-            </div>
 
             {/* Heading */}
-            <h1 className="text-5xl font-extrabold leading-tight mb-4 font-['Plus_Jakarta_Sans_Variable'] animate-fade-in-down">
+            <h1 className="text-5xl font-extrabold leading-tight mb-4 font-['Plus_Jakarta_Sans_Variable'] animate-fade-in-down text-gray-800">
               Woldia University
             </h1>
-            <p className="text-2xl font-semibold text-blue-100 mb-6 animate-fade-in-up">
+            <p className="text-2xl font-semibold text-blue-600 mb-6 animate-fade-in-up">
               Clearance System
             </p>
 
             {/* Description */}
-            <p className="text-lg text-blue-100 leading-relaxed mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <p className="text-lg text-gray-600 leading-relaxed mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               Streamlining the clearance process for academic staff with efficiency and transparency.
             </p>
 
@@ -78,8 +79,8 @@ const LoginPage: React.FC = () => {
                 'Real-time progress tracking',
                 'Instant certificate generation'
               ].map((feature, index) => (
-                <div key={index} className="flex items-center gap-3 text-blue-50">
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                <div key={index} className="flex items-center gap-3 text-gray-700">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   <span className="text-sm font-medium">{feature}</span>
                 </div>
               ))}
@@ -91,8 +92,12 @@ const LoginPage: React.FC = () => {
         <div className="p-8 md:p-12 flex flex-col justify-center">
           {/* Mobile Logo */}
           <div className="md:hidden mb-8 flex items-center justify-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-xl font-bold text-white font-['Plus_Jakarta_Sans_Variable']">WU</span>
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg p-1.5 overflow-hidden">
+              <img
+                src="/assets/logo.jpeg"
+                alt="Woldia University Logo"
+                className="w-full h-full object-contain rounded-xl"
+              />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 font-['Plus_Jakarta_Sans_Variable']">Woldia University</h1>
           </div>

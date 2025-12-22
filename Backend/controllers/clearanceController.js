@@ -835,12 +835,70 @@ const getClearedAcademicStaffRequests = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Reject final request (VP can reject at final oversight stage)
+const rejectFinalRequest = asyncHandler(async (req, res, next) => {
+  const { id: requestId } = req.params;
+  const { rejectionReason } = req.body;
+  const userId = req.user._id;
+
+  // Verify user is Academic VP
+  if (req.user.role !== 'AcademicVicePresident') {
+    return next(new AppError('Only Academic Vice President can reject requests', 403));
+  }
+
+  if (!rejectionReason) {
+    return next(new AppError('Rejection reason is required', 400));
+  }
+
+  try {
+    const request = await ClearanceRequest.findById(requestId);
+    if (!request) {
+      return next(new AppError('Clearance request not found', 404));
+    }
+
+    if (request.status !== 'in_progress') {
+      return next(new AppError('Request is not in the correct status for final rejection', 400));
+    }
+
+    // Update request status
+    request.status = 'rejected';
+    request.rejectionReason = rejectionReason;
+    request.rejectedAt = new Date();
+    request.reviewedBy = userId;
+    await request.save();
+
+    // Create notification for the request owner
+    await Notification.create({
+      userId: request.initiatedBy,
+      type: 'vp_final_rejected',
+      message: `VP rejected your clearance request at final oversight: ${rejectionReason}`,
+      relatedRequest: request._id,
+      read: false,
+    });
+
+    await ActivityLog.create({
+      userId,
+      action: 'VP_FINAL_REJECTION',
+      description: `Academic VP rejected clearance request ${request.referenceCode} at final oversight: ${rejectionReason}`,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Request rejected successfully',
+      data: request,
+    });
+  } catch (error) {
+    return next(new AppError('Failed to reject request', 500));
+  }
+});
+
 module.exports = {
   createClearanceRequest,
   approveInitialRequest,
   rejectInitialRequest,
   updateClearanceStep,
   approveFinalRequest,
+  rejectFinalRequest,
   archiveRequest,
   getRequestsForVP,
   getClearanceRequests,
