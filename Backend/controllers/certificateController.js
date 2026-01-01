@@ -15,8 +15,6 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const { id } = req.params;
-
     // Removed auth check to allow public download
     // const userId = req.user._id;
     // const userRole = req.user.role;
