@@ -64,13 +64,14 @@ const VPApprovalDashboard: React.FC = () => {
       const response = await clearanceService.approveInitialRequest(id, signature);
       if (response.success) {
         toastUtils.success('Initial validation completed successfully. Clearance process can now begin.');
-        setInitialApprovalRequests(initialApprovalRequests.filter(req => req._id !== id));
+        // Refresh page to demonstrate persistence
+        window.location.reload();
       } else {
         toastUtils.error(response.message || 'Failed to approve request.');
+        setApprovalInitiated(false);
       }
     } catch (error) {
       toastUtils.error('An error occurred while approving the request.');
-    } finally {
       setApprovalInitiated(false);
     }
   };
@@ -81,13 +82,14 @@ const VPApprovalDashboard: React.FC = () => {
       const response = await clearanceService.approveFinalRequest(id, signature);
       if (response.success) {
         toastUtils.success('Final VP oversight completed. Request is now ready for archiving.');
-        setFinalApprovalRequests(finalApprovalRequests.filter(req => req._id !== id));
+        // Refresh page to demonstrate persistence
+        window.location.reload();
       } else {
         toastUtils.error(response.message || 'Failed to complete final approval.');
+        setApprovalInitiated(false);
       }
     } catch (error) {
       toastUtils.error('An error occurred while processing final approval.');
-    } finally {
       setApprovalInitiated(false);
     }
   };
@@ -106,7 +108,7 @@ const VPApprovalDashboard: React.FC = () => {
       setIsSignatureModalOpen(false);
       setSigningRequestId(null);
       setSigningType('initial');
-      setApprovalInitiated(false);
+      // setApprovalInitiated(false); // Removed because reload will happen
     }
   };
 
@@ -130,21 +132,16 @@ const VPApprovalDashboard: React.FC = () => {
 
       if (response && response.success) {
         toastUtils.success(`Request rejected successfully.`);
-        if (type === 'initial') {
-          setInitialApprovalRequests(initialApprovalRequests.filter(req => req._id !== id));
-        } else {
-          setFinalApprovalRequests(finalApprovalRequests.filter(req => req._id !== id));
-        }
-        setRejectingRequestId(null);
-        setRejectionReason('');
+        // Refresh page to demonstrate persistence
+        window.location.reload();
       } else {
         console.error('Rejection failed:', response);
         toastUtils.error(response?.message || 'Failed to reject request.');
+        setApprovalInitiated(false);
       }
     } catch (error) {
       console.error('Error in rejection flow:', error);
       toastUtils.error('An error occurred while rejecting the request.');
-    } finally {
       setApprovalInitiated(false);
     }
   };
@@ -175,24 +172,14 @@ const VPApprovalDashboard: React.FC = () => {
 
       if (response.success) {
         toastUtils.success('Decision undid successfully.');
-        // Refresh requests
-        const updatedRequests = await clearanceService.getRequestsForVP();
-        if (updatedRequests.success) {
-          const initial = updatedRequests.data.filter((req: ClearanceRequest) =>
-            !req.isReadyForFinal
-          );
-          const final = updatedRequests.data.filter((req: ClearanceRequest) =>
-            req.isReadyForFinal
-          );
-          setInitialApprovalRequests(initial);
-          setFinalApprovalRequests(final);
-        }
+        // Refresh page to demonstrate persistence
+        window.location.reload();
       } else {
         toastUtils.error(response.message || 'Failed to undo decision.');
+        setApprovalInitiated(false);
       }
     } catch (error) {
       toastUtils.error('An error occurred while undoing the decision.');
-    } finally {
       setApprovalInitiated(false);
     }
   };

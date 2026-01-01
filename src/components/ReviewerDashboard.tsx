@@ -60,9 +60,8 @@ const ReviewerDashboard: React.FC = () => {
       if (response.success) {
         // Use enhanced clearance toast with step department/name
         toastUtils.clearance.stepUpdateSuccess(step?.department, status);
-        setSteps(steps.map(s => s._id === stepId ? { ...s, status: status, comment: comment } : s));
-        setCommentingStepId(null);
-        setComment('');
+        // Refresh page to demonstrate persistence
+        window.location.reload();
       } else {
         toastUtils.clearance.stepUpdateError(response.message || 'Failed to update step.');
       }
