@@ -73,6 +73,19 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
     ));
   }
 
+  // Check for existing active clearance request with same phone number
+  const existingPhoneRequest = await ClearanceRequest.findOne({
+    'formData.phoneNumber': phoneNumber,
+    status: { $nin: ['rejected', 'archived'] }
+  });
+
+  if (existingPhoneRequest) {
+    return next(new AppError(
+      'A clearance request with this phone number already exists and is currently active or cleared.',
+      400
+    ));
+  }
+
   // Generate a unique reference code
   const referenceCode = `CL-${Date.now()}-${staffId}`;
 
