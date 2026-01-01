@@ -5,7 +5,7 @@ const { generateCertificate, getCertificateData, verifyCertificate } = require('
 const router = express.Router();
 
 // Generate PDF certificate
-router.get('/:id/generate', generateCertificate);
+router.get('/:id/generate', protect, generateCertificate);
 
 // Public verification route
 router.get('/verify/:referenceCode', verifyCertificate);
