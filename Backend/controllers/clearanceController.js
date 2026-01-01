@@ -908,9 +908,9 @@ const getClearedAcademicStaffRequests = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Find all cleared requests
+    // Find all cleared, in-progress, or archived requests
     const clearedRequests = await ClearanceRequest.find({
-      status: 'cleared'
+      status: { $in: ['cleared', 'in_progress', 'archived'] }
     })
       .populate('initiatedBy', 'name email department staffId role')
       .sort({ completedAt: -1 });
