@@ -129,9 +129,9 @@ After running `npm run seed`, you can login with any of these credentials:
 - **Role**: HRManagementReviewer
 
 ### Records & Archives
-- **Email**: `archives@woldia.edu`
-- **Password**: `archives123`
-- **Role**: RecordsArchivesReviewer
+- **Email**: `recordsarchivesofficer@woldia.edu`
+- **Password**: `recordsarchives123`
+- **Role**: RecordsArchivesOfficerReviewer
 
 ### Facilities
 - **Email**: `facilities@woldia.edu`
