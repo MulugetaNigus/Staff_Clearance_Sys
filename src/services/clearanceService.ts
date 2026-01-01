@@ -89,4 +89,9 @@ export const clearanceService = {
     const response = await API.put(`/clearance/requests/${id}/undo-final`);
     return response.data;
   },
+
+  archiveRequest: async (id: string, signature?: string) => {
+    const response = await API.put(`/clearance/requests/${id}/archive`, { signature });
+    return response.data;
+  },
 };
