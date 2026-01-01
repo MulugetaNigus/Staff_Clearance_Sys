@@ -38,11 +38,11 @@ const VPApprovalDashboard: React.FC = () => {
         if (response.success) {
           // Separate requests by VP approval type
           const initial = response.data.filter((req: ClearanceRequest) =>
-            req.status === 'initiated' || req.status === 'rejected' || req.status === 'vp_initial_approval'
+            !req.isReadyForFinal
           );
           const final = response.data.filter((req: ClearanceRequest) => {
             // Requests ready for final VP approval (all departments completed except final VP step)
-            return req.status === 'in_progress' && req.vpInitialSignature && !req.vpFinalSignature;
+            return req.isReadyForFinal;
           });
 
           setInitialApprovalRequests(initial);
@@ -179,10 +179,10 @@ const VPApprovalDashboard: React.FC = () => {
         const updatedRequests = await clearanceService.getRequestsForVP();
         if (updatedRequests.success) {
           const initial = updatedRequests.data.filter((req: ClearanceRequest) =>
-            req.status === 'initiated' || req.status === 'rejected' || req.status === 'vp_initial_approval'
+            !req.isReadyForFinal
           );
           const final = updatedRequests.data.filter((req: ClearanceRequest) =>
-            req.status === 'in_progress' && req.vpInitialSignature && !req.vpFinalSignature
+            req.isReadyForFinal
           );
           setInitialApprovalRequests(initial);
           setFinalApprovalRequests(final);

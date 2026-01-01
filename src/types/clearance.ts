@@ -67,6 +67,7 @@ export interface ClearanceRequest {
     name: string;
   };
   uploadedFiles: UploadedFile[];
+  isReadyForFinal?: boolean;
   createdAt: string;
   updatedAt: string;
   steps: ClearanceStep[];

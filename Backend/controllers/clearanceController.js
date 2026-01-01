@@ -391,26 +391,49 @@ const getRequestsForVP = asyncHandler(async (req, res, next) => {
       .populate('initiatedBy', 'name email department')
       .sort({ createdAt: -1 });
 
-    const finalApprovalRequests = await ClearanceRequest.find({
-      status: 'in_progress',
+    // For final approval, we look for requests that have the initial signature
+    // and are in a state where they could be finished (vp_initial_approval or in_progress)
+    const potentialFinalRequests = await ClearanceRequest.find({
+      status: { $in: ['vp_initial_approval', 'in_progress'] },
       vpInitialSignature: { $exists: true },
       vpFinalSignature: { $exists: false }
     })
       .populate('initiatedBy', 'name email department')
       .sort({ createdAt: -1 });
 
-    // Check if final approval requests actually have all other steps completed
-    const validFinalApprovalRequests = [];
-    for (const request of finalApprovalRequests) {
+    // Check which ones actually have all other steps completed
+    const finalApprovalRequests = [];
+    for (const request of potentialFinalRequests) {
       const allSteps = await ClearanceStep.find({ requestId: request._id });
       const vpFinalStep = allSteps.find(step => step.reviewerRole === 'AcademicVicePresident' && step.vpSignatureType === 'final');
 
       if (vpFinalStep && vpFinalStep.canProcess) {
-        validFinalApprovalRequests.push(request);
+        // Convert to plain object to add custom property
+        const requestObj = request.toObject();
+        requestObj.isReadyForFinal = true;
+        finalApprovalRequests.push(requestObj);
       }
     }
 
-    const allRequests = [...initialApprovalRequests, ...validFinalApprovalRequests];
+    // Combine and ensure uniqueness (a request might be in both lists if it's rejected but also ready for final, 
+    // though unlikely in normal flow, better to be safe)
+    const requestMap = new Map();
+
+    initialApprovalRequests.forEach(req => {
+      requestMap.set(req._id.toString(), req.toObject());
+    });
+
+    finalApprovalRequests.forEach(req => {
+      const existing = requestMap.get(req._id.toString());
+      if (existing) {
+        // If it's already there, just add the flag
+        existing.isReadyForFinal = true;
+      } else {
+        requestMap.set(req._id.toString(), req);
+      }
+    });
+
+    const allRequests = Array.from(requestMap.values());
 
     // Debug logging
     console.log('VP REQUESTS DEBUG:');
