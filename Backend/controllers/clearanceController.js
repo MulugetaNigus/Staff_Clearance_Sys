@@ -29,6 +29,12 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
     return next(new AppError('First name, last name, and phone number are required', 400));
   }
 
+  // Validate name format (no numbers allowed)
+  const namePattern = /^[A-Za-z\s\-]+$/;
+  if (!namePattern.test(firstName) || !namePattern.test(lastName)) {
+    return next(new AppError('First and Last names must contain only letters, spaces, or hyphens. Numbers are not allowed.', 400));
+  }
+
   // Validate Ethiopian phone number format
   const phonePattern = /^(\+251[0-9]{9}|09[0-9]{8})$/;
   const trimmedPhone = phoneNumber.trim();
@@ -53,6 +59,19 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
   }
 
   const staffId = teacherId;
+
+  // Check for existing active clearance request
+  const existingRequest = await ClearanceRequest.findOne({
+    staffId,
+    status: { $nin: ['rejected', 'archived'] }
+  });
+
+  if (existingRequest) {
+    return next(new AppError(
+      'A clearance request with this ID already exists and is currently active or cleared.',
+      400
+    ));
+  }
 
   // Generate a unique reference code
   const referenceCode = `CL-${Date.now()}-${staffId}`;
