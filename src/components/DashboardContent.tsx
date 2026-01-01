@@ -274,6 +274,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [clearanceSteps, setClearanceSteps] = useState<ClearanceStep[]>([]);
+  const [myRequest, setMyRequest] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -282,12 +283,14 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
       try {
         const response = await clearanceService.getClearanceRequests();
         if (response.success && response.data.length > 0) {
-          const myRequest = response.data[0];
-          const stepsResponse = await clearanceService.getClearanceRequestById(myRequest._id);
+          const request = response.data[0];
+          setMyRequest(request);
+          const stepsResponse = await clearanceService.getClearanceRequestById(request._id);
           if (stepsResponse.success) {
             setClearanceSteps(stepsResponse.data.steps);
           }
         } else {
+          setMyRequest(null);
           setError('No active clearance request found.');
         }
       } catch (err) {
@@ -343,6 +346,20 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
     case 'dashboard':
       return <DashboardOverviewComponent setActiveTab={setActiveTab} />;
     case 'clearance':
+      if (myRequest && myRequest.status !== 'rejected') {
+        return (
+          <EmptyState
+            title="Active Clearance Request Found"
+            description="You already have an active or completed clearance request. You cannot initiate a new one."
+            icon="⚠️"
+            actionButton={{
+              text: "Track Progress",
+              onClick: () => setActiveTab('track-clearance'),
+              color: 'blue'
+            }}
+          />
+        );
+      }
       return <ClearanceForm onSubmit={handleClearanceSubmit} isLoading={isLoading} />;
     case 'profile':
       return <ProfileEditor />;

@@ -88,7 +88,7 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
     // Authorization check REMOVED to allow public download
     // Admins and specific reviewers can download any certificate
     // const authorizedRoles = ['SystemAdmin', 'RecordsArchivesOfficerReviewer', 'AcademicVicePresident', 'AcademicStaff'];
-    
+
     // console.log('CERTIFICATE AUTH CHECK SKIPPED (Public Access)');
 
     // if (!isAuthorizedRole && !isOwnRequest) {
@@ -212,7 +212,7 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       // --- STAFF INFORMATION SECTION ---
       const staffName = request.initiatedBy.name;
       const department = request.initiatedBy.department || 'N/A';
-      const staffId = request.initiatedBy.staffId || 'N/A';
+      const staffId = request.staffId || 'N/A';
       const referenceCode = request.referenceCode;
       const issueDate = request.completedAt || request.updatedAt || new Date();
       const generatedDate = new Date(issueDate).toLocaleDateString('en-GB', {
