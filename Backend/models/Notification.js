@@ -11,7 +11,7 @@ const notificationSchema = new mongoose.Schema(
         type: {
             type: String,
             required: true,
-            enum: ['step_approved', 'step_rejected', 'vp_initial_approved', 'vp_final_approved', 'request_rejected'],
+            enum: ['step_approved', 'step_rejected', 'vp_initial_approved', 'vp_final_approved', 'request_rejected', 'vp_final_rejected', 'request_archived'],
         },
         message: {
             type: String,
