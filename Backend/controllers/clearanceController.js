@@ -63,12 +63,12 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
   // Check for existing active clearance request
   const existingRequest = await ClearanceRequest.findOne({
     staffId,
-    status: { $nin: ['rejected', 'archived'] }
+    status: { $ne: 'rejected' }
   });
 
   if (existingRequest) {
     return next(new AppError(
-      'A clearance request with this ID already exists and is currently active or cleared.',
+      'A clearance request with this ID already exists. You cannot initiate a new request while you have an active or completed clearance.',
       400
     ));
   }
@@ -76,7 +76,7 @@ const createClearanceRequest = asyncHandler(async (req, res, next) => {
   // Check for existing active clearance request with same phone number
   const existingPhoneRequest = await ClearanceRequest.findOne({
     'formData.phoneNumber': phoneNumber,
-    status: { $nin: ['rejected', 'archived'] }
+    status: { $ne: 'rejected' }
   });
 
   if (existingPhoneRequest) {
