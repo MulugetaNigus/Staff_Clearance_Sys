@@ -397,18 +397,20 @@ const getRequestsForVP = asyncHandler(async (req, res, next) => {
       });
     }
 
-    // 2. Get all final VP steps for these requests in ONE query to avoid N+1
+    // 2. Get all VP steps (both initial and final) for these requests in ONE query
     const requestIds = requests.map(r => r._id);
-    const finalVpSteps = await ClearanceStep.find({
+    const allVpSteps = await ClearanceStep.find({
       requestId: { $in: requestIds },
-      reviewerRole: 'AcademicVicePresident',
-      vpSignatureType: 'final'
+      reviewerRole: 'AcademicVicePresident'
     });
 
-    // Create a map for quick lookup
+    // Create a map for quick lookup of FINAL steps
     const finalStepMap = new Map();
-    finalVpSteps.forEach(step => {
-      finalStepMap.set(step.requestId.toString(), step);
+    allVpSteps.forEach(step => {
+      // Identify final step: explicitly marked as 'final' OR has order > 1 (legacy support)
+      if (step.vpSignatureType === 'final' || step.order > 1) {
+        finalStepMap.set(step.requestId.toString(), step);
+      }
     });
 
     // 3. Process requests
@@ -765,6 +767,9 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
   request.vpFinalSignature = signature;
   request.vpFinalSignedAt = new Date();
 
+  // Update status to in_progress (cleared by VP, awaiting archival)
+  request.status = 'in_progress';
+
   // Clear rejection data if this was a decision change
   if (isDecisionChange) {
     request.rejectionReason = undefined;
@@ -824,15 +829,12 @@ const archiveRequest = asyncHandler(async (req, res, next) => {
     order: 13
   });
 
-  if (archiveStep) {
-    archiveStep.status = 'cleared';
-    archiveStep.reviewedBy = userId;
-    archiveStep.signature = signature;
-    archiveStep.lastUpdatedAt = new Date();
-    await archiveStep.save();
+  // Check dependencies BEFORE saving
+  if (!archiveStep) {
+    return next(new AppError('Archive step not found', 404));
   }
 
-  if (!archiveStep || !archiveStep.canProcess) {
+  if (!archiveStep.canProcess) {
     return next(new AppError('Cannot archive request. Dependencies not met.', 400));
   }
 
@@ -847,6 +849,15 @@ const archiveRequest = asyncHandler(async (req, res, next) => {
   request.status = 'archived';
   request.archivedAt = new Date();
   await request.save();
+
+  // Create notification for the request owner
+  await Notification.create({
+    userId: request.initiatedBy,
+    type: 'request_archived',
+    message: `Your clearance request ${request.referenceCode} has been archived and is now complete!`,
+    relatedRequest: request._id,
+    read: false,
+  });
 
   await ActivityLog.create({
     userId,
