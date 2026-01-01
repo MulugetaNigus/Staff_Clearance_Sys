@@ -39,11 +39,8 @@ const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onBack }) => {
       const response = await clearanceService.updateClearanceStep(stepId, { status, comment });
       if (response.success) {
         toastUtils.success('Step updated successfully.');
-        // Refresh steps
-        const updatedSteps = await clearanceService.getClearanceRequestById(request._id);
-        if (updatedSteps.success) {
-          setSteps(updatedSteps.data.steps);
-        }
+        // Refresh page to demonstrate persistence
+        window.location.reload();
       } else {
         toastUtils.error(response.message || 'Failed to update step.');
       }

@@ -53,9 +53,8 @@ const HRPendingRequestsDashboard: React.FC = () => {
       const response = await clearanceService.hrReviewRequest(requestId, action, rejectionReason);
       if (response.success) {
         toastUtils.success(`Request ${action === 'approve' ? 'approved and sent to VP' : 'rejected'} successfully.`);
-        setRequests(requests.filter(req => req._id !== requestId));
-        setRejectingRequestId(null);
-        setRejectionReason('');
+        // Refresh page to demonstrate persistence
+        window.location.reload();
       } else {
         toastUtils.error(response.message || `Failed to ${action} request.`);
       }
@@ -74,7 +73,8 @@ const HRPendingRequestsDashboard: React.FC = () => {
         const response = await clearanceService.hrReviewRequest(signingRequestId, 'approve', undefined, signature);
         if (response.success) {
           toastUtils.success(`Request approved and sent to VP successfully.`);
-          setRequests(requests.filter(req => req._id !== signingRequestId));
+          // Refresh page to demonstrate persistence
+          window.location.reload();
         } else {
           toastUtils.error(response.message || `Failed to approve request.`);
         }
