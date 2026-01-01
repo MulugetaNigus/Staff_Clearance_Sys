@@ -15,14 +15,11 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Safety check for user data
-    if (!req.user) {
-      console.error('CERTIFICATE ERROR: req.user is undefined. Middleware might be missing.');
-      return next(new AppError('Authentication required to generate certificate', 401));
-    }
+    const { id } = req.params;
 
-    const userId = req.user._id;
-    const userRole = req.user.role;
+    // Removed auth check to allow public download
+    // const userId = req.user._id;
+    // const userRole = req.user.role;
 
     // Enhanced validation
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -90,27 +87,15 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       request.completedAt = new Date();
     }
 
-    // Authorization check - staff can download their own certificates
+    // Authorization check REMOVED to allow public download
     // Admins and specific reviewers can download any certificate
-    const authorizedRoles = ['SystemAdmin', 'RecordsArchivesOfficerReviewer', 'AcademicVicePresident', 'AcademicStaff'];
-    // const userRole = req.user.role; // Now defined at the top
-    // const userId = req.user._id; // Now defined at the top
+    // const authorizedRoles = ['SystemAdmin', 'RecordsArchivesOfficerReviewer', 'AcademicVicePresident', 'AcademicStaff'];
+    
+    // console.log('CERTIFICATE AUTH CHECK SKIPPED (Public Access)');
 
-    console.log('CERTIFICATE AUTH CHECK:');
-    console.log(`User Role: ${userRole}`);
-    console.log(`User ID: ${userId}`);
-    console.log(`Request Initiated By: ${request.initiatedBy._id}`);
-    console.log(`Authorized Roles: ${authorizedRoles}`);
-
-    const isAuthorizedRole = authorizedRoles.includes(userRole);
-    const isOwnRequest = request.initiatedBy._id.toString() === userId.toString();
-
-    console.log(`Is Authorized Role: ${isAuthorizedRole}`);
-    console.log(`Is Own Request: ${isOwnRequest}`);
-
-    if (!isAuthorizedRole && !isOwnRequest) {
-      return next(new AppError('You do not have permission to generate this certificate', 403));
-    }
+    // if (!isAuthorizedRole && !isOwnRequest) {
+    //   return next(new AppError('You do not have permission to generate this certificate', 403));
+    // }
 
     // Steps are already fetched above, so we can use them directly
     // Build signatures object for consistent access
