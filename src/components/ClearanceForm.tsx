@@ -100,6 +100,14 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
       return;
     }
 
+    // Validate name format (no numbers allowed)
+    const namePattern = /^[A-Za-z\s\-]+$/;
+    if (!namePattern.test(firstName) || !namePattern.test(lastName)) {
+      setError('First and Last names must contain only letters, spaces, or hyphens. Numbers are not allowed.');
+      toastUtils.form.validationError('Names cannot contain numbers.');
+      return;
+    }
+
     // Validate department match
     if (!validateDepartment()) {
       setError('Department does not match your registered department.');
