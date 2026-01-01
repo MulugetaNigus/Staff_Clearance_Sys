@@ -49,15 +49,25 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
     console.log(`Cleared Steps: ${clearedSteps.length}`);
     console.log(`All Steps Cleared: ${allStepsCleared}`);
 
-    // IMPROVED LOGIC: Allow download if ALL steps are cleared, regardless of request status
-    if (!allStepsCleared) {
+    // IMPROVED LOGIC: Allow download if VP Final step is cleared OR all steps are cleared
+    // Find VP Final step
+    const vpFinalStep = clearanceSteps.find(s =>
+      s.reviewerRole === 'AcademicVicePresident' &&
+      (s.vpSignatureType === 'final' || s.order > 1)
+    );
+
+    const isVpFinalCleared = vpFinalStep && vpFinalStep.status === 'cleared';
+
+    // If VP Final is cleared, we consider the academic clearance complete
+    // The archiving step (RecordsArchivesOfficerReviewer) can happen after certificate generation
+    if (!allStepsCleared && !isVpFinalCleared) {
       const pendingSteps = clearanceSteps
         .filter(step => step.status !== 'cleared')
         .map(step => `${step.department} (${step.status})`)
         .join(', ');
 
       return next(new AppError(
-        `Certificate cannot be generated yet. Pending steps: ${pendingSteps}. (${clearedSteps.length}/${totalSteps} completed)`,
+        `Certificate cannot be generated yet. Pending steps: ${pendingSteps}.`,
         400
       ));
     }
