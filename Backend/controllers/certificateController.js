@@ -15,6 +15,12 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
   try {
     const { id } = req.params;
 
+    // Safety check for user data
+    if (!req.user) {
+      console.error('CERTIFICATE ERROR: req.user is undefined. Middleware might be missing.');
+      return next(new AppError('Authentication required to generate certificate', 401));
+    }
+
     const userId = req.user._id;
     const userRole = req.user.role;
 
