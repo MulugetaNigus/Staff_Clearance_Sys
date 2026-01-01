@@ -44,9 +44,20 @@ const DownloadCertificate: React.FC = () => {
     }, []);
 
     // Check if ALL steps are cleared (matches backend validation)
+    // Check if VP Final step is cleared OR all steps are cleared
     const isRequestFullyCleared = (requestId: string): boolean => {
         const steps = requestSteps[requestId] || [];
         if (steps.length === 0) return false;
+
+        // Check for VP Final step
+        const vpFinalStep = steps.find((s: any) =>
+            s.reviewerRole === 'AcademicVicePresident' &&
+            (s.vpSignatureType === 'final' || s.order > 1)
+        );
+
+        if (vpFinalStep && vpFinalStep.status === 'cleared') {
+            return true;
+        }
 
         const clearedSteps = steps.filter((s: any) => s.status === 'cleared');
         return clearedSteps.length === steps.length;
