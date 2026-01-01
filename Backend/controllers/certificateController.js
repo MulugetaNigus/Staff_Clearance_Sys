@@ -10,6 +10,20 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
+// Helper to format role to department name
+const formatRoleToDepartment = (role) => {
+  if (!role) return '';
+
+  // Handle known acronyms first to avoid splitting them
+  if (role.startsWith('ICT')) return 'ICT ' + role.substring(3).replace('Reviewer', '').replace(/([A-Z])/g, ' $1').trim();
+  if (role.startsWith('HR')) return 'HR ' + role.substring(2).replace('Reviewer', '').replace(/([A-Z])/g, ' $1').trim();
+
+  // Default formatting: CamelCaseReviewer -> Camel Case
+  return role.replace('Reviewer', '')
+    .replace(/([A-Z])/g, ' $1')
+    .trim();
+};
+
 // Generate certificate with workflow sequence and authorized person names
 const generateCertificate = asyncHandler(async (req, res, next) => {
   try {
@@ -322,6 +336,13 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
 
         // Truncate department if too long
         let deptText = step.department;
+
+        // Fix for generic "Other Departmental Clearances"
+        if (deptText === 'Other Departmental Clearances' && step.reviewerRole) {
+          deptText = formatRoleToDepartment(step.reviewerRole);
+        }
+
+        if (deptText.length > 35) deptText = deptText.substring(0, 32) + '...';
         if (deptText.length > 35) deptText = deptText.substring(0, 32) + '...';
         doc.text(deptText, currentX + 2, yPos + 5); currentX += colWidths[1];
 
