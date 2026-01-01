@@ -383,71 +383,52 @@ const getRequestsForVP = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Get requests that need initial VP approval or final VP approval
-    // We include 'rejected' and 'vp_initial_approval' to allow VP to change their decision
-    const initialApprovalRequests = await ClearanceRequest.find({
-      status: { $in: ['initiated', 'rejected', 'vp_initial_approval'] }
+    // 1. Get all requests that could possibly be relevant for VP
+    const requests = await ClearanceRequest.find({
+      status: { $in: ['initiated', 'vp_initial_approval', 'in_progress', 'rejected'] }
     })
       .populate('initiatedBy', 'name email department')
       .sort({ createdAt: -1 });
 
-    // For final approval, we look for requests that have the initial signature
-    // and are in a state where they could be finished (vp_initial_approval or in_progress)
-    const potentialFinalRequests = await ClearanceRequest.find({
-      status: { $in: ['vp_initial_approval', 'in_progress'] },
-      vpInitialSignature: { $exists: true },
-      vpFinalSignature: { $exists: false }
-    })
-      .populate('initiatedBy', 'name email department')
-      .sort({ createdAt: -1 });
-
-    // Check which ones actually have all other steps completed
-    const finalApprovalRequests = [];
-    for (const request of potentialFinalRequests) {
-      const allSteps = await ClearanceStep.find({ requestId: request._id });
-      const vpFinalStep = allSteps.find(step => step.reviewerRole === 'AcademicVicePresident' && step.vpSignatureType === 'final');
-
-      if (vpFinalStep && vpFinalStep.canProcess) {
-        // Convert to plain object to add custom property
-        const requestObj = request.toObject();
-        requestObj.isReadyForFinal = true;
-        finalApprovalRequests.push(requestObj);
-      }
+    if (!requests || requests.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
     }
 
-    // Combine and ensure uniqueness (a request might be in both lists if it's rejected but also ready for final, 
-    // though unlikely in normal flow, better to be safe)
-    const requestMap = new Map();
-
-    initialApprovalRequests.forEach(req => {
-      requestMap.set(req._id.toString(), req.toObject());
+    // 2. Get all final VP steps for these requests in ONE query to avoid N+1
+    const requestIds = requests.map(r => r._id);
+    const finalVpSteps = await ClearanceStep.find({
+      requestId: { $in: requestIds },
+      reviewerRole: 'AcademicVicePresident',
+      vpSignatureType: 'final'
     });
 
-    finalApprovalRequests.forEach(req => {
-      const existing = requestMap.get(req._id.toString());
-      if (existing) {
-        // If it's already there, just add the flag
-        existing.isReadyForFinal = true;
-      } else {
-        requestMap.set(req._id.toString(), req);
-      }
+    // Create a map for quick lookup
+    const finalStepMap = new Map();
+    finalVpSteps.forEach(step => {
+      finalStepMap.set(step.requestId.toString(), step);
     });
 
-    const allRequests = Array.from(requestMap.values());
+    // 3. Process requests
+    const processedRequests = requests.map(request => {
+      const reqObj = request.toObject();
+      const vpFinalStep = finalStepMap.get(request._id.toString());
 
-    // Debug logging
-    console.log('VP REQUESTS DEBUG:');
-    console.log(`Initial approval requests: ${initialApprovalRequests.length}`);
-    console.log(`Final approval requests: ${validFinalApprovalRequests.length}`);
-    allRequests.forEach(req => {
-      console.log(`- Request ID: ${req._id}, Status: ${req.status}, Initiated By: ${req.initiatedBy.name}`);
+      // A request is ready for final oversight if the final VP step is available/canProcess
+      // and it hasn't been signed yet
+      reqObj.isReadyForFinal = !!(vpFinalStep && vpFinalStep.canProcess && !request.vpFinalSignature);
+
+      return reqObj;
     });
 
     res.status(200).json({
       success: true,
-      data: allRequests,
+      data: processedRequests,
     });
   } catch (error) {
+    console.error('GET VP REQUESTS ERROR:', error);
     return next(new AppError('Failed to fetch VP requests', 500));
   }
 });
