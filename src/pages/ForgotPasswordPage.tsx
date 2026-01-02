@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toastUtils } from '../utils/toastUtils';
 import { userService } from '../services/userService';
-import { emailService } from '../services/emailService';
 import { FaEnvelope } from 'react-icons/fa';
 
 const ForgotPasswordPage: React.FC = () => {
@@ -21,18 +20,8 @@ const ForgotPasswordPage: React.FC = () => {
 
     try {
       const backendResponse = await userService.forgotPassword(email);
-      if (backendResponse.success && backendResponse.resetUrl) {
-        const emailResponse = await emailService.sendPasswordResetEmail({
-          to_email: email,
-          to_name: email,
-          reset_link: backendResponse.resetUrl,
-        });
-
-        if (emailResponse.success) {
-          toastUtils.success('If an account with that email exists, a password reset link has been sent.');
-        } else {
-          toastUtils.error('Failed to send password reset email.');
-        }
+      if (backendResponse.success) {
+        toastUtils.success('If an account with that email exists, a password reset link has been sent.');
       } else {
         toastUtils.error(backendResponse.message || 'Failed to initiate password reset.');
       }
@@ -46,7 +35,7 @@ const ForgotPasswordPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="grid md:grid-cols-2 gap-8 max-w-4xl w-full bg-white shadow-2xl rounded-2xl overflow-hidden">
-        
+
         <div className="hidden md:flex flex-col justify-center p-12 bg-gradient-to-br from-red-600 to-yellow-500 text-white">
           <h1 className="text-4xl font-extrabold leading-tight tracking-tighter">Forgot Your Password?</h1>
           <p className="text-lg mt-4 font-light text-red-100">No problem. Enter your email below and we'll send you a link to reset it.</p>
