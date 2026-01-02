@@ -43,10 +43,29 @@ const DownloadCertificate: React.FC = () => {
         fetchRequests();
     }, []);
 
-    // Check if ALL steps are cleared (matches backend validation)
+    // Check if request status is in_progress, cleared, or archived
+    // This is more robust than checking individual steps
     const isRequestFullyCleared = (requestId: string): boolean => {
+        const request = requests.find(r => r._id === requestId);
+        if (!request) return false;
+
+        const validStatuses = ['in_progress', 'cleared', 'archived'];
+        if (validStatuses.includes(request.status)) {
+            return true;
+        }
+
         const steps = requestSteps[requestId] || [];
         if (steps.length === 0) return false;
+
+        // Check for VP Final step as fallback
+        const vpFinalStep = steps.find((s: any) =>
+            s.reviewerRole === 'AcademicVicePresident' &&
+            (s.vpSignatureType === 'final' || s.order > 1)
+        );
+
+        if (vpFinalStep && vpFinalStep.status === 'cleared') {
+            return true;
+        }
 
         const clearedSteps = steps.filter((s: any) => s.status === 'cleared');
         return clearedSteps.length === steps.length;

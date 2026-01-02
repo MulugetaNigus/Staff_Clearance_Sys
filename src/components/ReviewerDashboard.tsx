@@ -56,15 +56,25 @@ const ReviewerDashboard: React.FC = () => {
 
     setApprovalInitiated(true);
     try {
-      const response = await clearanceService.updateClearanceStep(stepId, { status, comment, signature });
-      if (response.success) {
-        // Use enhanced clearance toast with step department/name
-        toastUtils.clearance.stepUpdateSuccess(step?.department, status);
-        setSteps(steps.map(s => s._id === stepId ? { ...s, status: status, comment: comment } : s));
-        setCommentingStepId(null);
-        setComment('');
+      // Special handling for Records Archives Officer - use archive endpoint
+      if (user?.role === 'RecordsArchivesOfficerReviewer' && status === 'cleared' && step?.requestId?._id) {
+        const response = await clearanceService.archiveRequest(step.requestId._id, signature);
+        if (response.success) {
+          toastUtils.success('Request archived successfully!');
+          window.location.reload();
+        } else {
+          toastUtils.error(response.message || 'Failed to archive request.');
+        }
       } else {
-        toastUtils.clearance.stepUpdateError(response.message || 'Failed to update step.');
+        const response = await clearanceService.updateClearanceStep(stepId, { status, comment, signature });
+        if (response.success) {
+          // Use enhanced clearance toast with step department/name
+          toastUtils.clearance.stepUpdateSuccess(step?.department, status);
+          // Refresh page to demonstrate persistence
+          window.location.reload();
+        } else {
+          toastUtils.clearance.stepUpdateError(response.message || 'Failed to update step.');
+        }
       }
     } catch (error) {
       toastUtils.clearance.stepUpdateError(error);
@@ -77,7 +87,22 @@ const ReviewerDashboard: React.FC = () => {
     if (signingStepId) {
       setApprovalInitiated(true);
       try {
-        await handleUpdateStep(signingStepId, 'cleared', signature);
+        const step = steps.find((s) => s._id === signingStepId);
+
+        // Special handling for Records Archives Officer - use archive endpoint
+        if (user?.role === 'RecordsArchivesOfficerReviewer' && step?.requestId?._id) {
+          const response = await clearanceService.archiveRequest(step.requestId._id, signature);
+          if (response.success) {
+            toastUtils.success('Request archived successfully!');
+            window.location.reload();
+          } else {
+            toastUtils.error(response.message || 'Failed to archive request.');
+          }
+        } else {
+          await handleUpdateStep(signingStepId, 'cleared', signature);
+        }
+      } catch (error) {
+        toastUtils.error(error);
       } finally {
         setApprovalInitiated(false);
       }
@@ -164,7 +189,7 @@ const ReviewerDashboard: React.FC = () => {
                             {step.requestId?.referenceCode || 'Unknown Request'}
                           </h3>
                           <p className="text-sm text-gray-500">
-                            Submitted: {step.requestId?.createdAt ? new Date(step.requestId.createdAt).toLocaleDateString() : 'N/A'}
+                            Submitted: {step.requestId?.createdAt ? new Date(step.requestId.createdAt).toLocaleString() : 'N/A'}
                           </p>
                         </div>
                       </div>
@@ -262,13 +287,13 @@ const ReviewerDashboard: React.FC = () => {
                       Flag Issue
                     </button>
                     <button onClick={() => handleUpdateStep(step._id, 'cleared')} disabled={approvalInitiated || isSignatureModalOpen} className="px-6 py-2 text-sm font-medium bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50">
-                      Clear
+                      {user?.role === 'RecordsArchivesOfficerReviewer' ? 'Archive' : 'Clear'}
                     </button>
                     <button onClick={() => {
                       setSigningStepId(step._id);
                       setIsSignatureModalOpen(true);
                     }} disabled={approvalInitiated || isSignatureModalOpen} className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50">
-                      Sign & Clear
+                      {user?.role === 'RecordsArchivesOfficerReviewer' ? 'Sign & Archive' : 'Sign & Clear'}
                     </button>
                   </>
                 )}

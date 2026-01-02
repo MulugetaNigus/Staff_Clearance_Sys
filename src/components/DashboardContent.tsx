@@ -206,7 +206,7 @@ const DashboardOverviewComponent: React.FC<{ setActiveTab: (tab: string) => void
         <div className="flex items-center mt-4 space-x-4">
           <div className="bg-white rounded-lg px-4 py-2 shadow-md">
             <span className="text-sm text-gray-500">Today</span>
-            <p className="text-lg font-semibold text-gray-900">{new Date().toLocaleDateString()}</p>
+            <p className="text-lg font-semibold text-gray-900">{new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
           </div>
           <div className="bg-white rounded-lg px-4 py-2 shadow-md">
             <span className="text-sm text-gray-500">Status</span>
@@ -274,6 +274,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [clearanceSteps, setClearanceSteps] = useState<ClearanceStep[]>([]);
+  const [myRequest, setMyRequest] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -282,12 +283,14 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
       try {
         const response = await clearanceService.getClearanceRequests();
         if (response.success && response.data.length > 0) {
-          const myRequest = response.data[0];
-          const stepsResponse = await clearanceService.getClearanceRequestById(myRequest._id);
+          const request = response.data[0];
+          setMyRequest(request);
+          const stepsResponse = await clearanceService.getClearanceRequestById(request._id);
           if (stepsResponse.success) {
             setClearanceSteps(stepsResponse.data.steps);
           }
         } else {
+          setMyRequest(null);
           setError('No active clearance request found.');
         }
       } catch (err) {
@@ -343,6 +346,20 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
     case 'dashboard':
       return <DashboardOverviewComponent setActiveTab={setActiveTab} />;
     case 'clearance':
+      if (myRequest && myRequest.status !== 'rejected') {
+        return (
+          <EmptyState
+            title="Active Clearance Request Found"
+            description="You already have an active or completed clearance request. You cannot initiate a new one."
+            icon="⚠️"
+            actionButton={{
+              text: "Track Progress",
+              onClick: () => setActiveTab('track-clearance'),
+              color: 'blue'
+            }}
+          />
+        );
+      }
       return <ClearanceForm onSubmit={handleClearanceSubmit} isLoading={isLoading} />;
     case 'profile':
       return <ProfileEditor />;
@@ -362,7 +379,11 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
           />
         );
       }
-      return <ProgressTracker steps={clearanceSteps} />;
+      return <ProgressTracker
+        steps={clearanceSteps}
+        rejectionReason={clearanceSteps.length > 0 ? (clearanceSteps[0] as any).requestId?.rejectionReason : undefined}
+        requestStatus={clearanceSteps.length > 0 ? (clearanceSteps[0] as any).requestId?.status : undefined}
+      />;
     case 'vp-approval':
       return <VPApprovalDashboard />;
     case 'review-requests':

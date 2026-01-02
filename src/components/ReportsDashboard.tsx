@@ -47,10 +47,27 @@ const ReportsDashboard: React.FC = () => {
         fetchStats();
     }, []);
 
-    const exportPDF = () => {
+    const exportPDF = async () => {
         if (!stats) return;
 
         const doc = new jsPDF();
+
+        // Add Logo
+        try {
+            const logoPath = '/assets/logo.jpeg';
+            const response = await fetch(logoPath);
+            if (response.ok) {
+                const blob = await response.blob();
+                const logoBase64 = await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                });
+                doc.addImage(logoBase64, 'JPEG', 14, 5, 25, 25);
+            }
+        } catch (error) {
+            console.error('Error adding logo to report PDF:', error);
+        }
 
         // Header
         doc.setFontSize(20);

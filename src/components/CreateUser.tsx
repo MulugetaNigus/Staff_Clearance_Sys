@@ -5,7 +5,7 @@ import { emailService } from '../services/emailService';
 import Input from './ui/Input';
 import Button from './ui/Button';
 import Card from './ui/Card';
-import { User, Mail, Phone, Briefcase, Shield } from 'lucide-react';
+import { User, Mail, Phone, Briefcase, Shield, Lock, Eye, EyeOff } from 'lucide-react';
 
 const USER_ROLES = [
   { value: 'AcademicStaff', label: 'Academic Staff' },
@@ -40,11 +40,19 @@ const USER_ROLES = [
   { value: 'FacilitiesReviewer', label: 'Facilities Reviewer' },
   { value: 'CaseExecutiveReviewer', label: 'Case Executive Reviewer' },
   { value: 'HRDevelopmentReviewer', label: 'HR Development Reviewer' },
+  // Workflow.js critical roles (Orders 5-13)
+  { value: 'ICTExecutiveReviewer', label: 'ICT Executive Reviewer' },
+  { value: 'PropertyExecutiveDirectorReviewer', label: 'Property Executive Director Reviewer' },
+  { value: 'SeniorFinanceSpecialistReviewer', label: 'Senior Finance Specialist Reviewer' },
+  { value: 'InternalAuditExecutiveDirectorReviewer', label: 'Internal Audit Executive Director' },
+  { value: 'HRCompetencyDevelopmentReviewer', label: 'HR Competency Development Team Leader' },
+  { value: 'RecordsArchivesOfficerReviewer', label: 'Records & Archives Officer' },
 ];
 
 interface ValidationErrors {
   name?: string;
   email?: string;
+  password?: string;
   department?: string;
   contactInfo?: string;
 }
@@ -53,10 +61,13 @@ const CreateUser: React.FC = () => {
   const [newUser, setNewUser] = useState<CreateUserData>({
     name: '',
     email: '',
+    password: '',
     role: 'AcademicStaff',
     department: '',
     contactInfo: '',
   });
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,11 +134,25 @@ const CreateUser: React.FC = () => {
     return undefined;
   };
 
+  const validatePassword = (password: string): string | undefined => {
+    if (!password) {
+      return 'Password is required';
+    }
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters long';
+    }
+    if (password.length > 50) {
+      return 'Password must not exceed 50 characters';
+    }
+    return undefined;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
 
     newErrors.name = validateName(newUser.name);
     newErrors.email = validateEmail(newUser.email);
+    newErrors.password = validatePassword(newUser.password);
     newErrors.department = validateDepartment(newUser.department);
     newErrors.contactInfo = validateContactInfo(newUser.contactInfo);
 
@@ -167,30 +192,8 @@ const CreateUser: React.FC = () => {
         toastUtils.dismiss(loadingToast);
         toastUtils.success('User created successfully!');
 
-        // Send welcome email with credentials
-        try {
-          const emailResult = await emailService.sendUserCreationEmail({
-            to_name: newUser.name,
-            to_email: newUser.email,
-            username: response.data.credentials.username,
-            password: response.data.credentials.password,
-            role: newUser.role,
-            department: newUser.department,
-          });
-
-          if (emailResult.success) {
-            toastUtils.success('Welcome email sent successfully!');
-          } else {
-            toastUtils.warning('User created but email notification failed to send.');
-            console.error('Email sending failed:', emailResult.error);
-          }
-        } catch (emailError) {
-          console.error('Email service error:', emailError);
-          toastUtils.warning('User created but email notification failed to send.');
-        }
-
         // Reset form
-        setNewUser({ name: '', email: '', role: 'AcademicStaff', department: '', contactInfo: '' });
+        setNewUser({ name: '', email: '', password: '', role: 'AcademicStaff', department: '', contactInfo: '' });
         setErrors({});
       } else {
         toastUtils.dismiss(loadingToast);
@@ -205,8 +208,9 @@ const CreateUser: React.FC = () => {
   };
 
   const handleReset = () => {
-    setNewUser({ name: '', email: '', role: 'AcademicStaff', department: '', contactInfo: '' });
+    setNewUser({ name: '', email: '', password: '', role: 'AcademicStaff', department: '', contactInfo: '' });
     setErrors({});
+    setShowPassword(false);
   };
 
   return (
@@ -241,6 +245,32 @@ const CreateUser: React.FC = () => {
               error={errors.email}
               required
             />
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Lock className="inline h-4 w-4 mr-1 text-gray-500" />
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={newUser.password}
+                  onChange={(e) => handleFieldChange('password', e.target.value)}
+                  placeholder="Enter password (min 6 characters)"
+                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all duration-200 pr-12 ${errors.password ? 'border-red-500' : 'border-gray-200'}`}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
+            </div>
 
             {/* Department */}
             <Input

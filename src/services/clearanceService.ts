@@ -1,5 +1,4 @@
 import API from './api';
-import axios from 'axios';
 
 export const clearanceService = {
   createClearanceRequest: async (data: FormData) => {
@@ -41,6 +40,11 @@ export const clearanceService = {
     return response.data;
   },
 
+  rejectFinalRequest: async (id: string, rejectionReason: string) => {
+    const response = await API.put(`/clearance/requests/${id}/reject-final`, { rejectionReason });
+    return response.data;
+  },
+
   getRequestsForVP: async () => {
     const response = await API.get('/clearance/requests/vp-review');
     return response.data;
@@ -73,6 +77,21 @@ export const clearanceService = {
 
   getClearedAcademicStaffRequests: async () => {
     const response = await API.get('/clearance/requests/cleared-academic-staff');
+    return response.data;
+  },
+
+  undoVPInitialDecision: async (id: string) => {
+    const response = await API.put(`/clearance/requests/${id}/undo-initial`);
+    return response.data;
+  },
+
+  undoVPFinalDecision: async (id: string) => {
+    const response = await API.put(`/clearance/requests/${id}/undo-final`);
+    return response.data;
+  },
+
+  archiveRequest: async (id: string, signature?: string) => {
+    const response = await API.put(`/clearance/requests/${id}/archive`, { signature });
     return response.data;
   },
 };

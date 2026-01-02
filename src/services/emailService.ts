@@ -42,6 +42,11 @@ export const emailService = {
     role: string;
     department: string;
   }) => {
+    if (!userDetails.to_email || !isValidEmail(userDetails.to_email)) {
+      console.error('Invalid email address:', userDetails.to_email);
+      return { success: false, error: 'Invalid email address' };
+    }
+
     try {
       const templateParams = {
         to_name: userDetails.to_name,
@@ -88,6 +93,11 @@ export const emailService = {
     to_name: string;
     reset_link: string;
   }) => {
+    if (!userDetails.to_email || !isValidEmail(userDetails.to_email)) {
+      console.error('Invalid email address:', userDetails.to_email);
+      return { success: false, error: 'Invalid email address' };
+    }
+
     try {
       const templateParams = {
         to_email: userDetails.to_email,
@@ -130,10 +140,15 @@ export const emailService = {
     status: 'activated' | 'deactivated';
     reason?: string;
   }) => {
+    if (!userDetails.to_email || !isValidEmail(userDetails.to_email)) {
+      console.error('Invalid email address:', userDetails.to_email);
+      return { success: false, error: 'Invalid email address' };
+    }
+
     try {
       const isActivated = userDetails.status === 'activated';
       const template = isActivated ? emailTemplates.ACCOUNT_ACTIVATION : emailTemplates.ACCOUNT_DEACTIVATION;
-      
+
       const templateParams = {
         to_email: userDetails.to_email,
         to_name: userDetails.to_name,
@@ -182,8 +197,14 @@ export const emailService = {
   }) => {
     try {
       const results = [];
+      const validRecipients = recipients.filter(email => isValidEmail(email));
 
-      for (const email of recipients) {
+      if (validRecipients.length === 0) {
+        console.error('No valid recipients found');
+        return { success: false, error: 'No valid recipients found' };
+      }
+
+      for (const email of validRecipients) {
         const templateParams = {
           to_email: email,
           subject: notification.subject,
@@ -213,6 +234,11 @@ export const emailService = {
 
   // Test email service
   testEmailService: async (testEmail: string) => {
+    if (!testEmail || !isValidEmail(testEmail)) {
+      console.error('Invalid email address:', testEmail);
+      return { success: false, error: 'Invalid email address' };
+    }
+
     try {
       const templateParams = {
         to_email: testEmail,

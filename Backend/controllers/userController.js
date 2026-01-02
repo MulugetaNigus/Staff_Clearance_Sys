@@ -1,16 +1,25 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const sendEmail = require('../utils/sendEmail');
 
 // Create new user by admin
 exports.createUser = async (req, res) => {
-  const { name, email, role, department, contactInfo } = req.body;
+  const { name, email, password, role, department, contactInfo } = req.body;
 
   try {
-    if (!name || !email || !role || !department || !contactInfo) {
+    if (!name || !email || !password || !role || !department || !contactInfo) {
       return res.status(400).json({
         success: false,
-        message: 'All fields are required (name, email, role, department, contactInfo)'
+        message: 'All fields are required (name, email, password, role, department, contactInfo)'
+      });
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long'
       });
     }
 
@@ -24,7 +33,6 @@ exports.createUser = async (req, res) => {
     }
 
     const username = User.generateUsername(name);
-    const password = User.generatePassword();
 
     const newUser = new User({
       name,
@@ -42,9 +50,7 @@ exports.createUser = async (req, res) => {
 
     await newUser.save();
 
-    // Log credentials for email sending
-    console.log(`User created successfully: ${email} with username: ${username} and password: ${password}`);
-
+    // Send response first to avoid blocking the user
     res.status(201).json({
       success: true,
       message: 'User created successfully',
@@ -64,6 +70,31 @@ exports.createUser = async (req, res) => {
           password
         }
       }
+    });
+
+    // Send email with credentials (background)
+    const emailOptions = {
+      email: newUser.email,
+      subject: 'Welcome to Woldia University - Your Account Credentials',
+      message: `
+        <h1>Welcome, ${newUser.name}!</h1>
+        <p>An administrator has created an account for you in the Teacher Clearance System.</p>
+        <p>Your login credentials are:</p>
+        <ul>
+          <li><strong>Email:</strong> ${newUser.email}</li>
+          <li><strong>Username:</strong> ${username}</li>
+          <li><strong>Password:</strong> ${password}</li>
+        </ul>
+        <p>You can log in here: <a href="${process.env.FRONTEND_URL}/login">${process.env.FRONTEND_URL}/login</a></p>
+        <p>Please log in and change your password as soon as possible for security reasons.</p>
+        <p>Best regards,<br>System Administrator<br>Woldia University</p>
+      `,
+    };
+
+    setImmediate(() => {
+      sendEmail(emailOptions).catch(emailError => {
+        console.error('Error sending credentials email:', emailError);
+      });
     });
   } catch (error) {
     console.error('Error creating user:', error);
@@ -231,10 +262,35 @@ exports.resetUserPassword = async (req, res) => {
 
     const newPassword = User.generatePassword();
     user.password = newPassword;
-    user.mustChangePassword = false; // Force password change after reset
+    user.mustChangePassword = true; // Force password change after reset
     await user.save();
 
     res.status(200).json({ message: 'Password reset successfully', newPassword });
+
+    // Send email in the background
+    const emailOptions = {
+      email: user.email,
+      subject: 'Your Password Has Been Reset',
+      message: `
+        <h1>Password Reset</h1>
+        <p>Hello ${user.name},</p>
+        <p>Your password for the Teacher Clearance System has been reset by an administrator.</p>
+        <p>Your new credentials are:</p>
+        <ul>
+          <li><strong>Email:</strong> ${user.email}</li>
+          <li><strong>New Password:</strong> ${newPassword}</li>
+        </ul>
+        <p>You can log in here: <a href="${process.env.FRONTEND_URL}/login">${process.env.FRONTEND_URL}/login</a></p>
+        <p>Please log in and change your password immediately.</p>
+        <p>Best regards,<br>System Administrator<br>Woldia University</p>
+      `,
+    };
+
+    setImmediate(() => {
+      sendEmail(emailOptions).catch(emailError => {
+        console.error('Error sending password reset email:', emailError);
+      });
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }
