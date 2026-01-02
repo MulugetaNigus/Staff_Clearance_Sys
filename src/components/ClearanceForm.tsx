@@ -10,6 +10,7 @@ interface ClearanceFormProps {
 
 type FileVisibility = 'hr' | 'vp' | 'all';
 
+// TEST SAMPLE
 interface UploadedFile {
   file: File;
   visibility: FileVisibility;
