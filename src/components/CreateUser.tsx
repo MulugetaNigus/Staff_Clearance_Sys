@@ -192,28 +192,6 @@ const CreateUser: React.FC = () => {
         toastUtils.dismiss(loadingToast);
         toastUtils.success('User created successfully!');
 
-        // Send welcome email with credentials
-        try {
-          const emailResult = await emailService.sendUserCreationEmail({
-            to_name: newUser.name,
-            to_email: newUser.email,
-            username: response.data.credentials.username,
-            password: response.data.credentials.password,
-            role: newUser.role,
-            department: newUser.department,
-          });
-
-          if (emailResult.success) {
-            toastUtils.success('Welcome email sent successfully!');
-          } else {
-            toastUtils.warning('User created but email notification failed to send.');
-            console.error('Email sending failed:', emailResult.error);
-          }
-        } catch (emailError) {
-          console.error('Email service error:', emailError);
-          toastUtils.warning('User created but email notification failed to send.');
-        }
-
         // Reset form
         setNewUser({ name: '', email: '', password: '', role: 'AcademicStaff', department: '', contactInfo: '' });
         setErrors({});
