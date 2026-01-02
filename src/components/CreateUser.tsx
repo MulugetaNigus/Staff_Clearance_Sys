@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { userService, type CreateUserData } from '../services/userService';
 import { toastUtils } from '../utils/toastUtils';
-import { emailService } from '../services/emailService';
 import Input from './ui/Input';
 import Button from './ui/Button';
 import Card from './ui/Card';

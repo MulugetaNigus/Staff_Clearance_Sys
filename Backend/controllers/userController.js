@@ -306,7 +306,30 @@ exports.toggleUserStatus = async (req, res) => {
     }
     user.isActive = !user.isActive;
     await user.save();
+
     res.status(200).json({ message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully` });
+
+    // Send email notification in the background
+    const emailOptions = {
+      email: user.email,
+      subject: `Your Account Has Been ${user.isActive ? 'Activated' : 'Deactivated'}`,
+      message: `
+        <h1>Account Status Update</h1>
+        <p>Hello ${user.name},</p>
+        <p>Your account for the Woldia University Teacher Clearance System has been <strong>${user.isActive ? 'activated' : 'deactivated'}</strong> by an administrator.</p>
+        ${user.isActive
+          ? `<p>You can now log in here: <a href="${process.env.FRONTEND_URL}/login">${process.env.FRONTEND_URL}/login</a></p>`
+          : `<p>If you believe this is an error, please contact the System Administrator.</p>`
+        }
+        <p>Best regards,<br>System Administrator<br>Woldia University</p>
+      `,
+    };
+
+    setImmediate(() => {
+      sendEmail(emailOptions).catch(emailError => {
+        console.error('Error sending account status email:', emailError);
+      });
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { getAllUsers, deleteUser, toggleUserStatus, resetUserPassword, createUser, type CreateUserData } from '../services/userService';
-import { emailService } from '../services/emailService';
 import { toastUtils } from '../utils/toastUtils';
 
 interface User {
@@ -134,12 +133,6 @@ const EnhancedUserManagement: React.FC = () => {
       setUsers([...users]);
 
       toastUtils.success(`User ${user.isActive ? 'activated' : 'deactivated'} successfully!`);
-
-      await emailService.sendAccountStatusEmail({
-        to_email: user.email,
-        to_name: user.name,
-        status: user.isActive ? 'activated' : 'deactivated'
-      });
     } catch (error: any) {
       console.error('Failed to toggle user status:', error);
       toastUtils.error(error.message || 'Failed to toggle user status');
@@ -153,15 +146,9 @@ const EnhancedUserManagement: React.FC = () => {
 
       if (window.confirm(`Are you sure you want to reset ${user.name}'s password? They will be notified via email.`)) {
         const loadingToast = toastUtils.loading('Resetting password...');
-        const { newPassword } = await resetUserPassword(userId);
+        await resetUserPassword(userId);
         toastUtils.dismiss(loadingToast);
         toastUtils.success('Password reset successfully! User has been notified via email.');
-
-        await emailService.sendPasswordResetEmail({
-          to_email: user.email,
-          to_name: user.name,
-          new_password: newPassword
-        });
       }
     } catch (error: any) {
       console.error('Failed to reset password:', error);

@@ -1,40 +1,46 @@
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
 const nodemailer = require('nodemailer');
 
-console.log('--- SMTP Diagnostic Tool ---');
-console.log('Host:', process.env.EMAIL_HOST);
-console.log('Port:', process.env.EMAIL_PORT);
-console.log('Secure:', process.env.EMAIL_SECURE);
-console.log('User:', process.env.EMAIL_USERNAME);
-console.log('---------------------------');
+console.log('--- SMTP Full Test (Sending Email) ---');
 
 const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT),
-    secure: process.env.EMAIL_SECURE === 'true',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // true for 465, false for 587
     auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
+        user: 'mullerhihi@gmail.com',
+        pass: 'tyqthgmjvfdwqmal',
     },
-    connectionTimeout: 15000, // 15 seconds
+    tls: {
+        rejectUnauthorized: false
+    },
+    connectionTimeout: 15000,
 });
 
-console.log('Attempting to connect to SMTP server...');
+const mailOptions = {
+    from: 'mullerhihi@gmail.com',
+    to: 'mullerhihi@gmail.com',
+    subject: 'Test Email from Teacher Clearance System',
+    html: `
+    <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+      <h2 style="color: #4CAF50;">SMTP Test Successful!</h2>
+      <p>This is a test email sent from your <strong>test-smtp.js</strong> script.</p>
+      <p>If you are reading this, it means your hardcoded credentials are working perfectly!</p>
+      <p>Timestamp: ${new Date().toLocaleString()}</p>
+    </div>
+  `,
+};
 
-transporter.verify((error, success) => {
+console.log('Attempting to send test email...');
+
+transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
-        console.error('❌ Connection failed!');
+        console.error('❌ Failed to send email!');
         console.error(error);
-
-        if (error.code === 'ETIMEDOUT') {
-            console.log('\n--- Troubleshooting Tips ---');
-            console.log('1. Render often blocks port 465. If you are using 465, try port 587 with EMAIL_SECURE=false.');
-            console.log('2. If you are using Gmail, make sure you are using an "App Password", not your regular password.');
-            console.log('3. Double check that EMAIL_HOST is correct (e.g., smtp.gmail.com).');
-        }
     } else {
-        console.log('✅ Server is ready to take our messages!');
+        console.log('✅ Email sent successfully!');
+        console.log('Response:', info.response);
+        console.log('Message ID:', info.messageId);
+        console.log('\nPlease check your inbox at mullerhihi@gmail.com');
     }
     process.exit();
 });
