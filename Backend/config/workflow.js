@@ -124,7 +124,7 @@ const ACADEMIC_STAFF_WORKFLOW = [
     description: 'HR verifies training agreements and employee records',
     dependsOn: [10]
   },
-  // Stage 5: Archiving (Now comes before Final VP)
+  // Stage 5: Archiving (VP Final Oversight is the absolute last step)
   {
     stage: WORKFLOW_STAGES.ARCHIVING,
     name: 'Records and Archives Officer',
@@ -134,10 +134,8 @@ const ACADEMIC_STAFF_WORKFLOW = [
     description: 'Final archiving and record keeping',
     dependsOn: [11]
   },
-
-  // Stage 4: Human Resource & Final Approvals (Final VP is strictly last)
   {
-    stage: WORKFLOW_STAGES.FINAL_APPROVALS,
+    stage: WORKFLOW_STAGES.ARCHIVING,
     name: 'Academic VP Final Oversight',
     roles: ['AcademicVicePresident'],
     order: 13,
