@@ -260,7 +260,7 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       doc.setFont('helvetica', 'bold');
       doc.text('Staff ID:', margin + 5, yPos + 16);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Staff ID       : ${request.initiatedBy.staffId || 'N/A'}`, margin + 35, yPos + 16);
+      doc.text(`${request.initiatedBy.staffId || 'N/A'}`, margin + 35, yPos + 16);
 
       // Add Reason
       doc.setFont('helvetica', 'bold');
@@ -291,65 +291,88 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       );
 
       if (vpInitialStep) {
-        doc.setFillColor(240, 240, 245); // Light Blue-Gray
-        doc.roundedRect(margin, yPos, pageWidth - (2 * margin), 35, 3, 3, 'FD');
+        // Professional Box Layout
+        const boxHeight = 40;
+        const boxY = yPos;
 
-        doc.setFontSize(11);
-        doc.setTextColor(10, 40, 90);
+        // Main Border
+        doc.setDrawColor(200, 200, 200);
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(margin, boxY, pageWidth - (2 * margin), boxHeight, 2, 2, 'FD');
+
+        // Header Bar
+        doc.setFillColor(10, 40, 90); // University Blue
+        doc.rect(margin, boxY, pageWidth - (2 * margin), 8, 'F');
+
+        // Header Text
+        doc.setFontSize(9);
+        doc.setTextColor(255, 255, 255); // White
         doc.setFont('helvetica', 'bold');
-        doc.text('ACADEMIC VP INITIAL APPROVAL', margin + 5, yPos + 7);
+        doc.text('ACADEMIC VICE PRESIDENT - INITIAL APPROVAL', margin + 5, boxY + 5.5);
 
-        yPos += 12;
-        doc.setFontSize(10);
+        // Content Area
+        const contentY = boxY + 14;
+
+        // Left Side: Status & Date
         doc.setTextColor(60, 60, 60);
-        doc.text('Status:', margin + 5, yPos);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Status:', margin + 5, contentY);
 
-        // Status Text
         const vpStatus = vpInitialStep.status.toUpperCase();
-        if (vpStatus === 'CLEARED' || vpStatus === 'VP_INITIAL_APPROVAL') doc.setTextColor(0, 128, 0);
-        else doc.setTextColor(200, 0, 0);
         doc.setFont('helvetica', 'bold');
-        doc.text(vpStatus === 'VP_INITIAL_APPROVAL' ? 'APPROVED' : vpStatus, margin + 25, yPos);
-
-        // Comment
-        if (vpInitialStep.comment) {
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(60, 60, 60);
-          doc.text(`Comment: ${vpInitialStep.comment}`, margin + 60, yPos);
+        if (vpStatus === 'CLEARED' || vpStatus === 'VP_INITIAL_APPROVAL') {
+          doc.setTextColor(0, 128, 0); // Green
+          doc.text('APPROVED', margin + 25, contentY);
+        } else {
+          doc.setTextColor(200, 0, 0); // Red
+          doc.text(vpStatus, margin + 25, contentY);
         }
 
-        // Signature
+        // Approval Date
+        if (vpInitialStep.updatedAt) {
+          doc.setTextColor(60, 60, 60);
+          doc.setFont('helvetica', 'normal');
+          doc.text('Date:', margin + 5, contentY + 6);
+          doc.text(new Date(vpInitialStep.updatedAt).toLocaleDateString(), margin + 25, contentY + 6);
+        }
+
+        // Comment (Full width below)
+        if (vpInitialStep.comment) {
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(8);
+          doc.setTextColor(80, 80, 80);
+          doc.text(`"${vpInitialStep.comment}"`, margin + 5, contentY + 14, { maxWidth: 100 });
+        }
+
+        // Right Side: Signature
         const signatureKey = 'vpinitialsignature';
         const signatureToUse = signatures[signatureKey] || vpInitialStep.signature;
 
+        doc.setDrawColor(220, 220, 220);
+        doc.line(pageWidth - margin - 60, boxY + 8, pageWidth - margin - 60, boxY + boxHeight); // Vertical divider
+
         if (signatureToUse && signatureToUse.startsWith('data:image')) {
           try {
-            // Basic valid check without helper function availability
             const formatMatch = signatureToUse.match(/data:image\/(png|jpg|jpeg|gif|bmp|webp)/i);
             let imgFormat = 'PNG';
             if (formatMatch && formatMatch[1]) {
               imgFormat = formatMatch[1].toUpperCase() === 'JPG' ? 'JPEG' : formatMatch[1].toUpperCase();
             }
-            doc.addImage(signatureToUse, imgFormat, pageWidth - margin - 50, yPos - 5, 40, 15);
+            // Centered signature in the right box
+            doc.addImage(signatureToUse, imgFormat, pageWidth - margin - 55, boxY + 10, 50, 20);
           } catch (err) {
             console.warn('Error adding VP initial signature', err);
           }
-        } else if (signatureToUse) {
-          // If path
-          try {
-            const sigPath = signatureToUse.startsWith('/') ? signatureToUse : '/' + signatureToUse;
-            // Since we are in backend, we need absolute path if using addImage with path, 
-            // BUT jsPDF in Node usually expects base64 or buffer for addImage unless properly configured.
-            // Assuming signatures[key] could be base64 from previous logic. 
-            // The previous logic accumulated signatures in `signatures` object.
-            // If it is a file path, we might need to read it.
-            // However, the original code had limited signature handling. 
-            // Let's safe guard:
-            doc.text('(Signed)', pageWidth - margin - 40, yPos);
-          } catch (e) { }
         }
 
-        yPos += 30;
+        // Signature Label
+        doc.setFontSize(7);
+        doc.setTextColor(150, 150, 150);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Authorized Signature', pageWidth - margin - 30, boxY + 36, { align: 'center' });
+
+        yPos += boxHeight + 10;
       }
 
       // --- CLEARANCE WORKFLOW TABLE ---
