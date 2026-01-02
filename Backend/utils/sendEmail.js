@@ -1,28 +1,31 @@
 const nodemailer = require('nodemailer');
 
-// Create a reusable transporter object using the default SMTP transport
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USERNAME,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-  // Set short timeouts to prevent hanging the process
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 15000,
-});
-
 const sendEmail = async (options) => {
+  // Hardcoded credentials for reliability as requested
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // true for 465, false for 587
+    auth: {
+      user: 'mullerhihi@gmail.com',
+      pass: 'tyqthgmjvfdwqmal',
+    },
+    tls: {
+      rejectUnauthorized: false
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
+  });
+
   const mailOptions = {
-    from: process.env.EMAIL_FROM,
+    from: 'mullerhihi@gmail.com',
     to: options.email,
     subject: options.subject,
     html: options.message,
   };
 
+  console.log(`Attempting to send email to: ${options.email} via smtp.gmail.com`);
   return transporter.sendMail(mailOptions);
 };
 
