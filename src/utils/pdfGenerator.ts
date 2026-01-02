@@ -188,10 +188,64 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
   doc.text(`Name           : ${request.initiatedBy.name}`, margin + 5, yPos + 17);
   doc.text(`Department     : ${request.initiatedBy.department || 'N/A'}`, margin + 5, yPos + 24);
   doc.text(`Staff ID       : ${request.initiatedBy.staffId || 'N/A'}`, margin + 5, yPos + 31);
-  doc.text(`Clearance Type : ${request.purpose}`, pageWidth / 2 + 10, yPos + 17);
+  doc.text(`Staff ID       : ${request.initiatedBy.staffId || 'N/A'}`, margin + 5, yPos + 31);
+  doc.text(`Reason         : ${request.purpose}`, pageWidth / 2 + 10, yPos + 17);
   doc.text(`Submitted On   : ${new Date(request.createdAt).toLocaleDateString()}`, pageWidth / 2 + 10, yPos + 24);
   doc.text(`Finalized On   : ${new Date(request.updatedAt).toLocaleDateString()}`, pageWidth / 2 + 10, yPos + 31);
   yPos += 50;
+
+  // Pre-process steps to identify VP approvals
+  const vpInitialStep = request.steps.find((s: any) =>
+    s.department === 'Vice President for Academic, Research & Community Engagement' ||
+    s.vpSignatureType === 'initial' ||
+    s.reviewerRole === 'vice_president' // Fallback check
+  );
+
+  const stepsForTable = request.steps.filter((s: any) => s !== vpInitialStep);
+
+  // VP INITIAL APPROVAL SECTION (Above Table)
+  if (vpInitialStep) {
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('VP Initial Approval:', margin, yPos);
+    yPos += 8;
+
+    doc.setDrawColor(0);
+    doc.setFillColor(250, 250, 250);
+    doc.rect(margin, yPos, pageWidth - 2 * margin, 35, 'F');
+
+    doc.setFontSize(10);
+    doc.text(`Status: ${vpInitialStep.status === 'cleared' ? 'Approved' : vpInitialStep.status}`, margin + 5, yPos + 8);
+
+    if (vpInitialStep.comment) {
+      doc.text(`Comment: ${vpInitialStep.comment}`, margin + 5, yPos + 16, { maxWidth: pageWidth - 2 * margin - 60 });
+    }
+
+    // Render VP Initial Signature
+    const signatureKey = 'vpinitialsignature'; // Key for VP initial
+    const signatureToUse = signatures[signatureKey] || vpInitialStep.signature;
+
+    if (signatureToUse) {
+      // Validate and Render Signature logic similar to table
+      // Simplified for brevity, reuse logic if possible or duplicate safely
+      const validatedSignature = validateAndFixBase64Image(signatureToUse);
+      if (validatedSignature) {
+        const formatMatch = validatedSignature.match(/data:image\/(png|jpg|jpeg|gif|bmp|webp)/i);
+        let imgFormat = 'PNG';
+        if (formatMatch && formatMatch[1]) {
+          imgFormat = formatMatch[1].toUpperCase() === 'JPG' ? 'JPEG' : formatMatch[1].toUpperCase();
+        }
+        doc.addImage(validatedSignature, imgFormat, pageWidth - margin - 50, yPos + 2, 40, 12);
+      } else {
+        renderSignaturePlaceholder(doc, pageWidth - margin - 50, yPos + 10, '[Invalid Signature]');
+      }
+    } else {
+      renderSignaturePlaceholder(doc, pageWidth - margin - 50, yPos + 10, '[Pending Signature]');
+    }
+
+    yPos += 45;
+  }
+
 
   // DEPARTMENT CLEARANCE STATUS TABLE
   doc.setFontSize(14);
@@ -200,15 +254,16 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
   yPos += 10;
 
   // Table Headers
-  const colWidths = [10, 80, 30, 25, 25]; // Adjusted widths: #, Department, Status, Signed Date, Signature
+  // Table Headers
+  // Removed Signature Column, Merged Signature into Status
+  const colWidths = [10, 80, 50, 30]; // Adjusted widths: #, Department, Status (Signature), Signed Date
   const colPositions = [
     margin,
     margin + colWidths[0],
     margin + colWidths[0] + colWidths[1],
-    margin + colWidths[0] + colWidths[1] + colWidths[2],
-    margin + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3]
+    margin + colWidths[0] + colWidths[1] + colWidths[2]
   ];
-  const rowHeight = 8;
+  const rowHeight = 15; // Increased row height for signatures
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
@@ -216,13 +271,16 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
   doc.rect(margin, yPos, pageWidth - 2 * margin, rowHeight, 'F');
   doc.text('#', colPositions[0] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
   doc.text('Department', colPositions[1] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
-  doc.text('Status', colPositions[2] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
+  doc.text('Status / Signature', colPositions[2] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
   doc.text('Signed Date', colPositions[3] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
-  doc.text('Signature', colPositions[4] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
   yPos += rowHeight;
 
   doc.setFont('helvetica', 'normal');
   request.steps.forEach((step: any, index: number) => {
+    // Logic handled inside loop
+  });
+  // REPLACING LOOP LOGIC
+  stepsForTable.forEach((step: any, index: number) => {
     if (yPos + rowHeight > pageHeight - margin) {
       doc.addPage();
       addWatermark(doc, pageWidth, pageHeight); // Add watermark to new page
@@ -233,14 +291,22 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
       doc.rect(margin, yPos, pageWidth - 2 * margin, rowHeight, 'F');
       doc.text('#', colPositions[0] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
       doc.text('Department', colPositions[1] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
-      doc.text('Status', colPositions[2] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
+      doc.text('Status / Signature', colPositions[2] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
       doc.text('Signed Date', colPositions[3] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
-      doc.text('Signature', colPositions[4] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
       yPos += rowHeight;
       doc.setFont('helvetica', 'normal');
     }
 
-    const isCleared = step.status === 'cleared';
+    // Check for VP Final step to map status
+    let displayStatus = step.status === 'cleared' ? 'Cleared' : 'Issue';
+    let isCleared = step.status === 'cleared';
+
+    // VP Final Handling: Map 'in_progress' to 'Cleared'
+    if ((step.department === 'Academic Vice President Final Oversight' || step.reviewerRole === 'academic_vice_president') && step.status === 'in_progress') {
+      displayStatus = 'Cleared';
+      isCleared = true;
+    }
+
     const rowColor = index % 2 === 0 ? 255 : 245; // Alternating row colors
     doc.setFillColor(rowColor, rowColor, rowColor);
     if (isCleared) {
@@ -253,7 +319,6 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
     doc.setTextColor(0, 0, 0);
     doc.text(`${index + 1}`, colPositions[0] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
     doc.text(step.department, colPositions[1] + 2, yPos + rowHeight / 2 + 1, { align: 'left', maxWidth: colWidths[1] - 4 });
-    doc.text(isCleared ? 'Cleared' : 'Issue', colPositions[2] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
     doc.text(new Date(step.updatedAt).toLocaleDateString(), colPositions[3] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
 
     // Enhanced signature handling with validation
@@ -292,6 +357,7 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
         console.log(`✅ Using department signature for ${step.department}, key: ${signatureKey}`);
       }
 
+      // RENDER SIGNATURE IN STATUS COLUMN (colPositions[2])
       if (signatureToUse && signatureToUse.startsWith('data:image')) {
         // Validate and process base64 image
         const validatedSignature = validateAndFixBase64Image(signatureToUse);
@@ -309,24 +375,26 @@ export const generateClearanceCertificate = async (request: any, signatures: { [
           console.log(`Adding validated ${imgFormat} signature for ${step.department}`);
 
           // Add image with proper error handling
-          doc.addImage(validatedSignature, imgFormat, colPositions[4] + 2, yPos + 1, 20, 6);
+          doc.addImage(validatedSignature, imgFormat, colPositions[2] + 2, yPos + 1, 35, 12);
         } else {
           console.warn(`Invalid base64 signature for ${step.department}, using placeholder`);
-          renderSignaturePlaceholder(doc, colPositions[4] + 2, yPos + rowHeight / 2 + 1, '[Invalid Signature]');
+          // Fallback to text status if signature invalid
+          doc.text(displayStatus, colPositions[2] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
         }
       } else if (signatureToUse && !signatureToUse.startsWith('data:image')) {
         // Handle file path (relative to backend)
         console.log(`Adding file path signature for ${step.department}: ${signatureToUse}`);
         const signaturePath = signatureToUse.startsWith('/') ? signatureToUse : `/${signatureToUse}`;
-        doc.addImage(signaturePath, 'PNG', colPositions[4] + 2, yPos + 1, 20, 6);
+        doc.addImage(signaturePath, 'PNG', colPositions[2] + 2, yPos + 1, 35, 12);
       } else {
-        // No valid signature found
-        console.log(`No valid signature found for ${step.department}, using placeholder`);
-        renderSignaturePlaceholder(doc, colPositions[4] + 2, yPos + rowHeight / 2 + 1, '[Digital Signature]');
+        // No valid signature found - Fallback to Text Status
+        console.log(`No valid signature found for ${step.department}, using text status`);
+        doc.text(displayStatus, colPositions[2] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
       }
     } catch (signatureError) {
       console.error(`Error adding signature for ${step.department}:`, signatureError, 'Signature data:', step.signature ? step.signature.substring(0, 100) + '...' : 'none');
-      renderSignaturePlaceholder(doc, colPositions[4] + 2, yPos + rowHeight / 2 + 1, '[Signature Error]', true);
+      // Fallback on error
+      doc.text(displayStatus, colPositions[2] + 2, yPos + rowHeight / 2 + 1, { align: 'left' });
     }
     yPos += rowHeight;
   });
