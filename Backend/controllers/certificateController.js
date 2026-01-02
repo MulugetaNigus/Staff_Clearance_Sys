@@ -260,7 +260,13 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       doc.setFont('helvetica', 'bold');
       doc.text('Staff ID:', margin + 5, yPos + 16);
       doc.setFont('helvetica', 'normal');
-      doc.text(staffId, margin + 35, yPos + 16);
+      doc.text(`Staff ID       : ${request.initiatedBy.staffId || 'N/A'}`, margin + 35, yPos + 16);
+
+      // Add Reason
+      doc.setFont('helvetica', 'bold');
+      doc.text('Reason:', margin + 5, yPos + 24);
+      doc.setFont('helvetica', 'normal');
+      doc.text(request.purpose, margin + 35, yPos + 24);
 
       // Column 2
       const col2X = pageWidth / 2 + 10;
@@ -275,6 +281,76 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       doc.text(generatedDate, col2X + 30, yPos + 8);
 
       yPos += 35;
+
+      yPos += 35;
+
+      // --- VP INITIAL APPROVAL SECTION (Above Table) ---
+      const vpInitialStep = clearanceSteps.find(s =>
+        s.reviewerRole === 'AcademicVicePresident' &&
+        (s.vpSignatureType === 'initial' || s.order === 1)
+      );
+
+      if (vpInitialStep) {
+        doc.setFillColor(240, 240, 245); // Light Blue-Gray
+        doc.roundedRect(margin, yPos, pageWidth - (2 * margin), 35, 3, 3, 'FD');
+
+        doc.setFontSize(11);
+        doc.setTextColor(10, 40, 90);
+        doc.setFont('helvetica', 'bold');
+        doc.text('ACADEMIC VP INITIAL APPROVAL', margin + 5, yPos + 7);
+
+        yPos += 12;
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        doc.text('Status:', margin + 5, yPos);
+
+        // Status Text
+        const vpStatus = vpInitialStep.status.toUpperCase();
+        if (vpStatus === 'CLEARED' || vpStatus === 'VP_INITIAL_APPROVAL') doc.setTextColor(0, 128, 0);
+        else doc.setTextColor(200, 0, 0);
+        doc.setFont('helvetica', 'bold');
+        doc.text(vpStatus === 'VP_INITIAL_APPROVAL' ? 'APPROVED' : vpStatus, margin + 25, yPos);
+
+        // Comment
+        if (vpInitialStep.comment) {
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(60, 60, 60);
+          doc.text(`Comment: ${vpInitialStep.comment}`, margin + 60, yPos);
+        }
+
+        // Signature
+        const signatureKey = 'vpinitialsignature';
+        const signatureToUse = signatures[signatureKey] || vpInitialStep.signature;
+
+        if (signatureToUse && signatureToUse.startsWith('data:image')) {
+          try {
+            // Basic valid check without helper function availability
+            const formatMatch = signatureToUse.match(/data:image\/(png|jpg|jpeg|gif|bmp|webp)/i);
+            let imgFormat = 'PNG';
+            if (formatMatch && formatMatch[1]) {
+              imgFormat = formatMatch[1].toUpperCase() === 'JPG' ? 'JPEG' : formatMatch[1].toUpperCase();
+            }
+            doc.addImage(signatureToUse, imgFormat, pageWidth - margin - 50, yPos - 5, 40, 15);
+          } catch (err) {
+            console.warn('Error adding VP initial signature', err);
+          }
+        } else if (signatureToUse) {
+          // If path
+          try {
+            const sigPath = signatureToUse.startsWith('/') ? signatureToUse : '/' + signatureToUse;
+            // Since we are in backend, we need absolute path if using addImage with path, 
+            // BUT jsPDF in Node usually expects base64 or buffer for addImage unless properly configured.
+            // Assuming signatures[key] could be base64 from previous logic. 
+            // The previous logic accumulated signatures in `signatures` object.
+            // If it is a file path, we might need to read it.
+            // However, the original code had limited signature handling. 
+            // Let's safe guard:
+            doc.text('(Signed)', pageWidth - margin - 40, yPos);
+          } catch (e) { }
+        }
+
+        yPos += 30;
+      }
 
       // --- CLEARANCE WORKFLOW TABLE ---
       doc.setFontSize(12);
@@ -312,7 +388,10 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       doc.setFontSize(9);
       doc.setTextColor(0, 0, 0);
 
-      clearanceSteps.forEach((step, index) => {
+      // Filter out VP Initial for table
+      const tableSteps = clearanceSteps.filter(s => s !== vpInitialStep);
+
+      tableSteps.forEach((step, index) => {
         if (yPos + rowHeight > pageHeight - 40) {
           doc.addPage();
           yPos = 20;
@@ -358,13 +437,54 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
         }) : '-';
         doc.text(dateStr, currentX + 2, yPos + 5); currentX += colWidths[3];
 
-        // Status with color
-        const status = step.status.toUpperCase();
-        if (status === 'CLEARED') doc.setTextColor(0, 128, 0);
-        else if (status === 'PENDING') doc.setTextColor(200, 150, 0);
-        else doc.setTextColor(200, 0, 0);
+        // Check for VP Final step to map status
+        let displayStatus = step.status.toUpperCase();
+        let isCleared = step.status === 'cleared';
 
-        doc.text(status, currentX + 2, yPos + 5);
+        // VP Final Handling: Map 'in_progress' to 'CLEARED'
+        if ((step.department === 'Academic Vice President Final Oversight' || step.reviewerRole === 'AcademicVicePresident') && step.vpSignatureType === 'final') {
+          if (step.status === 'in_progress' || step.status === 'cleared') {
+            displayStatus = 'CLEARED';
+            isCleared = true;
+          }
+        }
+
+        // Try to find signature
+        let signatureToDisplay = null;
+        if (step.signature) signatureToDisplay = step.signature;
+
+        // Lookup in signatures object (populated earlier)
+        const key = step.department.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (signatures[key]) signatureToDisplay = signatures[key];
+
+        // VP Final signature specific lookup
+        if (step.vpSignatureType === 'final' && signatures['vpfinalsignature']) {
+          signatureToDisplay = signatures['vpfinalsignature'];
+        }
+
+        if (signatureToDisplay && signatureToDisplay.startsWith('data:image')) {
+          try {
+            const formatMatch = signatureToDisplay.match(/data:image\/(png|jpg|jpeg|gif|bmp|webp)/i);
+            let imgFormat = 'PNG';
+            if (formatMatch && formatMatch[1]) {
+              imgFormat = formatMatch[1].toUpperCase() === 'JPG' ? 'JPEG' : formatMatch[1].toUpperCase();
+            }
+            // Render signature image instead of text
+            doc.addImage(signatureToDisplay, imgFormat, currentX + 2, yPos - 2, 30, 8);
+          } catch (err) {
+            // Fallback to text
+            if (isCleared || displayStatus === 'CLEARED') doc.setTextColor(0, 128, 0);
+            else if (displayStatus === 'PENDING') doc.setTextColor(200, 150, 0);
+            else doc.setTextColor(200, 0, 0);
+            doc.text(displayStatus, currentX + 2, yPos + 5);
+          }
+        } else {
+          // Text Status Fallback
+          if (isCleared || displayStatus === 'CLEARED') doc.setTextColor(0, 128, 0);
+          else if (displayStatus === 'PENDING') doc.setTextColor(200, 150, 0);
+          else doc.setTextColor(200, 0, 0);
+          doc.text(displayStatus, currentX + 2, yPos + 5);
+        }
 
         yPos += rowHeight;
       });
