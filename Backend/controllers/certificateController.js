@@ -5,7 +5,7 @@ const ActivityLog = require('../models/ActivityLog');
 const { asyncHandler } = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const { jsPDF } = require('jspdf');
-const QRCode = require('qrcode');
+
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -529,31 +529,8 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       doc.setFillColor(248, 250, 252); // Very light blue-gray
       doc.roundedRect(margin, yPos, pageWidth - (2 * margin), 45, 3, 3, 'FD');
 
-      // QR Code Section (Left)
-      const baseUrl = process.env.FRONTEND_URL || 'https://clearance.wldu.edu.et';
-      const verificationUrl = `${baseUrl}/verify/${referenceCode}`;
-
-      try {
-        const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify({
-          referenceCode,
-          staffId,
-          url: verificationUrl
-        }), { errorCorrectionLevel: 'H', width: 100 });
-
-        // White background for QR code
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(margin + 5, yPos + 5, 35, 35, 2, 2, 'F');
-        doc.addImage(qrCodeDataURL, 'PNG', margin + 7.5, yPos + 7.5, 30, 30);
-      } catch (e) {
-        // Fallback
-      }
-
-      // Vertical Divider
-      doc.setDrawColor(220, 220, 220);
-      doc.line(margin + 45, yPos + 5, margin + 45, yPos + 40);
-
-      // Verification Text (Right)
-      const textStartX = margin + 50;
+      // Verification Text (Full Width)
+      const textStartX = margin + 5;
 
       // Title
       doc.setFontSize(11);
@@ -565,7 +542,7 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       doc.setFontSize(9);
       doc.setTextColor(80, 80, 80);
       doc.setFont('helvetica', 'normal');
-      doc.text('Scan the QR code to verify the authenticity of this document.', textStartX, yPos + 16);
+      doc.text('Please verify the authenticity of this document using the Reference Code.', textStartX, yPos + 16);
       doc.text('The digital record serves as the primary source of truth.', textStartX, yPos + 21);
 
       // Validity Warning
