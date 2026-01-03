@@ -1,4 +1,8 @@
 const express = require('express');
+const dns = require('dns');
+// Force IPv4 ordering to fix Node 17+ connection issues in some environments (like Render)
+dns.setDefaultResultOrder('ipv4first');
+
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
