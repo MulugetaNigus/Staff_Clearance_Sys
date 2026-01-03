@@ -4,7 +4,13 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+// Try to load .env from current directory first, then fallback to explicit Backend path
+const dotenv = require('dotenv');
+const envResult = dotenv.config();
+if (envResult.error) {
+  // If failed (maybe because we are in root), try specific path
+  dotenv.config({ path: path.join(__dirname, '.env') });
+}
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
