@@ -6,7 +6,7 @@ const sendEmail = async (options) => {
   const emailConfig = {
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
     port: process.env.EMAIL_PORT || 587,
-    secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+    secure: process.env.EMAIL_SECURE === 'true' || process.env.EMAIL_PORT === '465', // auto-enable secure for port 465
     auth: {
       user: process.env.EMAIL_USERNAME || 'mullerhihi@gmail.com',
       pass: process.env.EMAIL_PASSWORD || 'tyqthgmjvfdwqmal',
