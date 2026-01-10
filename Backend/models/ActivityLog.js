@@ -17,6 +17,8 @@ const activityLogSchema = new mongoose.Schema(
       enum: [
         'FORM_SUBMITTED',
         'REQUEST_CREATED',
+        'REQUEST_UPDATED',
+        'FILE_REPLACED',
         'INITIAL_APPROVAL',
         'INITIAL_REJECTION',
         'STEP_UPDATED',

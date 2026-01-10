@@ -758,6 +758,7 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
 
   // Update the VP final step
   vpFinalStep.status = 'cleared';
+
   vpFinalStep.reviewedBy = userId;
   vpFinalStep.signature = signature;
   vpFinalStep.lastUpdatedAt = new Date();
@@ -804,6 +805,146 @@ const approveFinalRequest = asyncHandler(async (req, res, next) => {
     message: 'Final VP approval completed successfully',
     data: request,
   });
+});
+
+// Owner: update their own clearance request (form data and supporting files)
+const updateClearanceRequestByOwner = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const request = await ClearanceRequest.findById(id);
+  if (!request) return next(new AppError('Clearance request not found', 404));
+
+  // Only owner can update
+  if (request.initiatedBy.toString() !== userId.toString()) {
+    return next(new AppError('You do not have permission to update this request', 403));
+  }
+
+  // Do not allow updates to completed/archived requests
+  if (['cleared', 'archived'].includes(request.status)) {
+    return next(new AppError('Cannot modify a completed or archived request', 400));
+  }
+
+  const { formData } = req.body;
+  if (formData) {
+    let parsed = {};
+    try {
+      parsed = JSON.parse(formData);
+    } catch (err) {
+      return next(new AppError('Invalid form data', 400));
+    }
+
+    // Validate phone if provided
+    if (parsed.phoneNumber) {
+      const phonePattern = /^(\+251[0-9]{9}|09[0-9]{8})$/;
+      if (!phonePattern.test(parsed.phoneNumber.trim())) {
+        return next(new AppError('Invalid phone number format. Please use Ethiopian format: +251912345678 or 0912345678', 400));
+      }
+    }
+
+    request.formData = { ...request.formData, ...parsed };
+  }
+
+  // Append files if any
+  const uploadedFiles = req.files?.map(file => ({
+    fileName: file.originalname,
+    filePath: file.path,
+    mimetype: file.mimetype,
+    size: file.size,
+    visibility: 'all'
+  })) || [];
+
+  if (uploadedFiles.length > 0) {
+    request.uploadedFiles = [...(request.uploadedFiles || []), ...uploadedFiles];
+  }
+
+  await request.save();
+
+  await ActivityLog.create({
+    userId,
+    action: 'REQUEST_UPDATED',
+    description: `Clearance request ${request.referenceCode} updated by owner`,
+  });
+
+  res.status(200).json({ success: true, data: request });
+});
+
+
+
+// Owner: replace an uploaded file with a new uploaded file
+const replaceUploadedFile = asyncHandler(async (req, res, next) => {
+  const { id: requestId, fileId } = req.params;
+  const userId = req.user._id;
+
+  const request = await ClearanceRequest.findById(requestId);
+  if (!request) return next(new AppError('Clearance request not found', 404));
+
+  // Only owner can replace files
+  if (request.initiatedBy.toString() !== userId.toString()) {
+    return next(new AppError('You do not have permission to modify this request', 403));
+  }
+
+  const fileSubdoc = request.uploadedFiles.id(fileId);
+  if (!fileSubdoc) return next(new AppError('File not found', 404));
+
+  if (!req.file) return next(new AppError('New file is required', 400));
+
+  const fs = require('fs');
+  try {
+    // Delete old file if exists
+    if (fileSubdoc.filePath && fs.existsSync(fileSubdoc.filePath)) {
+      fs.unlinkSync(fileSubdoc.filePath);
+    }
+  } catch (err) {
+    console.warn('Failed to delete old file from disk:', err.message || err);
+  }
+
+  // Update subdocument with new file details
+  fileSubdoc.fileName = req.file.originalname;
+  fileSubdoc.filePath = req.file.path;
+  fileSubdoc.mimetype = req.file.mimetype;
+  fileSubdoc.size = req.file.size;
+
+  await request.save();
+
+  await ActivityLog.create({
+    userId,
+    action: 'FILE_REPLACED',
+    description: `Owner replaced file ${fileSubdoc.fileName} on request ${request.referenceCode}`,
+  });
+
+  res.status(200).json({ success: true, message: 'File replaced', data: fileSubdoc });
+});
+
+// Owner: add a comment/response to a specific clearance step
+const addOwnerCommentToStep = asyncHandler(async (req, res, next) => {
+  const { id: stepId } = req.params;
+  const { comment } = req.body;
+  const userId = req.user._id;
+
+  if (!comment || comment.trim().length === 0) {
+    return next(new AppError('Comment is required', 400));
+  }
+
+  const step = await ClearanceStep.findById(stepId).populate('requestId');
+  if (!step) return next(new AppError('Clearance step not found', 404));
+
+  // Only request owner can add comment to steps for their request
+  if (step.requestId.initiatedBy.toString() !== userId.toString()) {
+    return next(new AppError('You do not have permission to comment on this step', 403));
+  }
+
+  step.ownerResponses = step.ownerResponses || [];
+  step.ownerResponses.push({ user: userId, comment: comment.trim(), createdAt: new Date() });
+  await step.save();
+
+  await ActivityLog.create({
+    userId,
+    action: 'STEP_OWNER_COMMENT',
+    description: `Owner added comment to step ${step.department} of request ${step.requestId.referenceCode}`,
+  });
+
+  res.status(200).json({ success: true, message: 'Comment added', data: step });
 });
 
 // Archive request (final step)
@@ -1122,5 +1263,8 @@ module.exports = {
   handleInterdependentSteps,
   checkAndCompleteRequest,
   fixRoleNames,
-  getClearedAcademicStaffRequests
+  getClearedAcademicStaffRequests,
+  updateClearanceRequestByOwner,
+  replaceUploadedFile,
+  addOwnerCommentToStep
 };

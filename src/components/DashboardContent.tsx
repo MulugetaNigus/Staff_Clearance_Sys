@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import ClearanceForm from './ClearanceForm';
 import ProfileEditor from './ProfileEditor';
 import ProgressTracker from './ProgressTracker';
+import MyClearances from './MyClearances';
+import MyClearanceDetails from './MyClearanceDetails';
 import VPApprovalDashboard from './VPApprovalDashboard';
 import ReviewerDashboard from './ReviewerDashboard';
 import HRPendingRequestsDashboard from './HRPendingRequestsDashboard';
@@ -55,7 +57,7 @@ const QuickActions: React.FC<{ role: string; setActiveTab: (tab: string) => void
     } else { // Default to 'User' role
       return [
         { title: 'Start Clearance', icon: Rocket, action: () => setActiveTab('clearance'), color: 'from-blue-500 to-blue-600' },
-        { title: 'Track Progress', icon: BarChart3, action: () => setActiveTab('track-clearance'), color: 'from-emerald-500 to-emerald-600' },
+        { title: 'My Clearance Forms', icon: FileText, action: () => setActiveTab('my-clearances'), color: 'from-emerald-500 to-emerald-600' },
         { title: 'Update Profile', icon: Edit, action: () => setActiveTab('profile'), color: 'from-purple-500 to-purple-600' },
         { title: 'Download Certificate', icon: FileText, action: () => setActiveTab('download-certificate'), color: 'from-amber-500 to-amber-600' },
       ];
@@ -311,7 +313,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
 
       if (response.success) {
         toastUtils.clearance.submitSuccess(response.data?.referenceCode);
-        setActiveTab('track-clearance');
+        setActiveTab('my-clearances');
         // Re-fetch clearance data after submission if user is AcademicStaff
         if (user?.role === 'AcademicStaff') {
           const fetchMyClearance = async () => {
@@ -342,6 +344,11 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
     }
   };
 
+  if (activeTab && activeTab.startsWith('my-clearance-')) {
+    const requestId = activeTab.replace('my-clearance-', '');
+    return <MyClearanceDetails requestId={requestId} />;
+  }
+
   switch (activeTab) {
     case 'dashboard':
       return <DashboardOverviewComponent setActiveTab={setActiveTab} />;
@@ -353,37 +360,30 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ activeTab, setActiv
             description="You already have an active or completed clearance request. You cannot initiate a new one."
             icon="⚠️"
             actionButton={{
-              text: "Track Progress",
-              onClick: () => setActiveTab('track-clearance'),
+              text: "View My Forms",
+              onClick: () => setActiveTab('my-clearances'),
               color: 'blue'
             }}
           />
         );
       }
       return <ClearanceForm onSubmit={handleClearanceSubmit} isLoading={isLoading} />;
+    case 'my-clearances':
+      return <MyClearances onOpen={(id) => setActiveTab(`my-clearance-${id}`)} />;
     case 'profile':
       return <ProfileEditor />;
-    case 'track-clearance':
-      if (isLoading) return <div>Loading...</div>;
-      if (error) {
-        return (
-          <EmptyState
-            title="No Active Clearance Request"
-            description="You haven't initiated a clearance request yet. Start your clearance process to begin tracking your progress through all required departmental approvals."
-            icon="📊"
-            actionButton={{
-              text: "Start Clearance Process",
-              onClick: () => setActiveTab('clearance'),
-              color: 'blue'
-            }}
-          />
-        );
-      }
-      return <ProgressTracker
-        steps={clearanceSteps}
-        rejectionReason={clearanceSteps.length > 0 ? (clearanceSteps[0] as any).requestId?.rejectionReason : undefined}
-        requestStatus={clearanceSteps.length > 0 ? (clearanceSteps[0] as any).requestId?.status : undefined}
-      />;
+    // 'track-clearance' removed - users should use 'My Clearance Forms' to view and update requests.
+      case 'track-clearance':
+        return <EmptyState
+          title="Removed"
+          description="This view was removed. Please use 'My Clearance Forms' in the sidebar to view your requests."
+          icon="ℹ️"
+          actionButton={{
+            text: "Go to My Clearance Forms",
+            onClick: () => setActiveTab('my-clearances'),
+            color: 'blue'
+          }}
+        />;
     case 'vp-approval':
       return <VPApprovalDashboard />;
     case 'review-requests':

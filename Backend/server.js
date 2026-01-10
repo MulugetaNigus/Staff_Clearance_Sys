@@ -8,6 +8,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+
 // Try to load .env from current directory first, then fallback to explicit Backend path
 const dotenv = require('dotenv');
 const envResult = dotenv.config();

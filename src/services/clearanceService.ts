@@ -94,4 +94,30 @@ export const clearanceService = {
     const response = await API.put(`/clearance/requests/${id}/archive`, { signature });
     return response.data;
   },
+
+  // Owner: update their own clearance request (form data / files)
+  updateClearanceRequest: async (id: string, data: FormData) => {
+    const response = await API.put(`/clearance/requests/${id}`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Owner: replace an uploaded file with a new one
+  replaceUploadedFile: async (requestId: string, fileId: string, data: FormData) => {
+    const response = await API.put(`/clearance/requests/${requestId}/files/${fileId}`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Owner: add a comment/response to a specific step
+  addOwnerCommentToStep: async (stepId: string, comment: string) => {
+    const response = await API.post(`/clearance/steps/${stepId}/comment`, { comment });
+    return response.data;
+  },
 };

@@ -53,6 +53,14 @@ const clearanceStepSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }],
+    // Owner responses/comments for this step
+    ownerResponses: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        comment: { type: String, trim: true },
+        createdAt: { type: Date, default: Date.now }
+      }
+    ],
     // New fields for enhanced workflow
     stage: {
       type: String,

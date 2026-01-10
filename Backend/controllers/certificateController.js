@@ -119,6 +119,20 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       }
     });
 
+    // Build a fallback role -> full name map for steps where reviewedBy is missing
+    const rolesToLookup = [...new Set(clearanceSteps.filter(s => !s.reviewedBy && s.reviewerRole).map(s => s.reviewerRole))];
+    const roleNameMap = {};
+    if (rolesToLookup.length > 0) {
+      try {
+        const usersForRoles = await User.find({ role: { $in: rolesToLookup } }).select('name role').lean();
+        usersForRoles.forEach(u => {
+          if (u && u.role) roleNameMap[u.role] = u.name;
+        });
+      } catch (err) {
+        console.warn('Failed to lookup users for reviewer roles:', err.message || err);
+      }
+    }
+
     // Add VP signatures from request if they exist
     if (request.vpInitialSignature) {
       signatures['vpinitialsignature'] = request.vpInitialSignature;
@@ -448,7 +462,9 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
         if (deptText.length > 35) deptText = deptText.substring(0, 32) + '...';
         doc.text(deptText, currentX + 2, yPos + 5); currentX += colWidths[1];
 
-        doc.text(step.reviewedBy?.name || 'System', currentX + 2, yPos + 5); currentX += colWidths[2];
+        // Prefer explicit reviewer name; fallback to role -> user lookup or 'System'
+        const reviewerName = step.reviewedBy?.name || roleNameMap[step.reviewerRole] || 'System';
+        doc.text(reviewerName, currentX + 2, yPos + 5); currentX += colWidths[2];
 
         const stepDate = step.lastUpdatedAt || step.updatedAt || step.approvedAt;
         const dateStr = stepDate ? new Date(stepDate).toLocaleString('en-GB', {
@@ -620,6 +636,20 @@ const getCertificateData = asyncHandler(async (req, res, next) => {
     .sort({ order: 1 })
     .lean();
 
+  // Build role -> name map for fallback when reviewedBy is not populated
+  const rolesToLookup = [...new Set(clearanceSteps.filter(s => !s.reviewedBy && s.reviewerRole).map(s => s.reviewerRole))];
+  const roleNameMap = {};
+  if (rolesToLookup.length > 0) {
+    try {
+      const usersForRoles = await User.find({ role: { $in: rolesToLookup } }).select('name role').lean();
+      usersForRoles.forEach(u => {
+        if (u && u.role) roleNameMap[u.role] = u.name;
+      });
+    } catch (err) {
+      console.warn('Failed to lookup users for reviewer roles in getCertificateData:', err.message || err);
+    }
+  }
+
   const certificateData = {
     staffName: request.initiatedBy.name,
     department: request.initiatedBy.department,
@@ -628,7 +658,7 @@ const getCertificateData = asyncHandler(async (req, res, next) => {
     workflowSequence: clearanceSteps.map((step, index) => ({
       step: index + 1,
       department: step.department,
-      approvedBy: step.reviewedBy?.name,
+      approvedBy: step.reviewedBy?.name || roleNameMap[step.reviewerRole] || null,
       approvedAt: step.approvedAt,
       status: step.status
     })),

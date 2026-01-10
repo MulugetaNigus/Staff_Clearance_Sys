@@ -52,9 +52,9 @@ const menuItems: MenuItem[] = [
     roles: ['AcademicStaff', 'LibraryReviewer', 'AcademicDepartmentReviewer', 'RegistrarReviewer', 'StudentDeanReviewer', 'DistanceEducationReviewer', 'ResearchDirectorateReviewer', 'CollegeReviewer', 'DepartmentReviewer', 'EmployeeFinanceReviewer', 'GeneralServiceReviewer', 'PropertyDirectorReviewer', 'Store1Reviewer', 'Store2Reviewer', 'PropertySpecialist1Reviewer', 'PropertySpecialist2Reviewer', 'InternalAuditReviewer', 'FinanceExecutiveReviewer', 'FinanceSpecialistReviewer', 'TreasurerReviewer', 'EthicsReviewer', 'ICTReviewer', 'CommunityEngagementReviewer', 'HRManagementReviewer', 'RecordsArchivesReviewer', 'FacilitiesReviewer', 'CaseExecutiveReviewer', 'HRDevelopmentReviewer', 'ICTExecutiveReviewer', 'PropertyExecutiveDirectorReviewer', 'SeniorFinanceSpecialistReviewer', 'InternalAuditExecutiveDirectorReviewer', 'HRCompetencyDevelopmentReviewer', 'RecordsArchivesOfficerReviewer']
   },
   {
-    id: 'track-clearance',
-    name: 'Track Progress',
-    icon: BarChart3,
+    id: 'my-clearances',
+    name: 'My Clearance Forms',
+    icon: FileText,
     roles: ['AcademicStaff']
   },
   {

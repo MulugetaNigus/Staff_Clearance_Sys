@@ -18,6 +18,7 @@ export interface ClearanceStep {
   interdependentWith?: string[];
   vpSignatureType?: 'initial' | 'final';
   canProcess?: boolean;
+  ownerResponses?: { user: { _id?: string; name?: string }; comment: string; createdAt: string }[];
   createdAt: string;
   updatedAt: string;
 }
