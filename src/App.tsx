@@ -18,7 +18,6 @@ const App: React.FC = () => {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          
           <Route path="/verify/:referenceCode" element={<VerificationPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/force-change-password" element={<ForceChangePassword />} /> 
