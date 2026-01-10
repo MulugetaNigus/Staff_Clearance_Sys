@@ -30,7 +30,7 @@ const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onBack }) => {
   }, [request._id]);
 
   const handleUpdateStep = async (stepId: string, status: 'cleared' | 'issue', comment?: string) => {
-    if (request.status === 'pending_approval') {
+    if (request.status === 'initiated') {
       toastUtils.info('This request has not been approved by the VP yet.');
       return;
     }
@@ -39,11 +39,8 @@ const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onBack }) => {
       const response = await clearanceService.updateClearanceStep(stepId, { status, comment });
       if (response.success) {
         toastUtils.success('Step updated successfully.');
-        // Refresh steps
-        const updatedSteps = await clearanceService.getClearanceRequestById(request._id);
-        if (updatedSteps.success) {
-          setSteps(updatedSteps.data.steps);
-        }
+        // Refresh page to demonstrate persistence
+        window.location.reload();
       } else {
         toastUtils.error(response.message || 'Failed to update step.');
       }
@@ -68,7 +65,7 @@ const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onBack }) => {
           <div><strong>Status:</strong> {request.status.replace('_', ' ').toUpperCase()}</div>
           <div><strong>Initiator:</strong> {request.initiatedBy.name}</div>
           <div><strong>Purpose:</strong> {request.purpose}</div>
-          <div><strong>Submitted:</strong> {new Date(request.createdAt).toLocaleDateString()}</div>
+          <div><strong>Submitted:</strong> {new Date(request.createdAt).toLocaleString()}</div>
         </div>
         <h2 className="text-xl font-bold text-gray-800 mt-6 mb-4">Clearance Steps</h2>
         <div className="space-y-4">
@@ -82,7 +79,7 @@ const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onBack }) => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleUpdateStep(step.id, 'cleared')}
-                    disabled={request.status === 'pending_approval'}
+                    disabled={request.status === 'initiated'}
                     className="bg-green-500 text-white px-3 py-1 rounded-lg text-sm disabled:opacity-50">
                     Clear
                   </button>
@@ -93,7 +90,7 @@ const RequestDetails: React.FC<RequestDetailsProps> = ({ request, onBack }) => {
                         handleUpdateStep(step.id, 'issue', comment);
                       }
                     }}
-                    disabled={request.status === 'pending_approval'}
+                    disabled={request.status === 'initiated'}
                     className="bg-red-500 text-white px-3 py-1 rounded-lg text-sm disabled:opacity-50">
                     Flag Issue
                   </button>

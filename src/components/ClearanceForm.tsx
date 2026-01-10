@@ -10,6 +10,7 @@ interface ClearanceFormProps {
 
 type FileVisibility = 'hr' | 'vp' | 'all';
 
+// TEST SAMPLE
 interface UploadedFile {
   file: File;
   visibility: FileVisibility;
@@ -97,6 +98,14 @@ const ClearanceForm: React.FC<ClearanceFormProps> = ({ onSubmit, isLoading }) =>
     if (!validatePhoneNumber(phoneNumber)) {
       setError('Invalid phone number. Please use Ethiopian format: +251912345678 or 0912345678');
       toastUtils.form.validationError('Invalid phone number format. Use +251912345678 or 0912345678');
+      return;
+    }
+
+    // Validate name format (no numbers allowed)
+    const namePattern = /^[A-Za-z\s\-]+$/;
+    if (!namePattern.test(firstName) || !namePattern.test(lastName)) {
+      setError('First and Last names must contain only letters, spaces, or hyphens. Numbers are not allowed.');
+      toastUtils.form.validationError('Names cannot contain numbers.');
       return;
     }
 

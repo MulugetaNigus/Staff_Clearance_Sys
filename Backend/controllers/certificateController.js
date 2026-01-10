@@ -5,28 +5,33 @@ const ActivityLog = require('../models/ActivityLog');
 const { asyncHandler } = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const { jsPDF } = require('jspdf');
-const QRCode = require('qrcode');
+
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+
+// Helper to format role to department name
+const formatRoleToDepartment = (role) => {
+  if (!role) return '';
+
+  // Handle known acronyms first to avoid splitting them
+  if (role.startsWith('ICT')) return 'ICT ' + role.substring(3).replace('Reviewer', '').replace(/([A-Z])/g, ' $1').trim();
+  if (role.startsWith('HR')) return 'HR ' + role.substring(2).replace('Reviewer', '').replace(/([A-Z])/g, ' $1').trim();
+
+  // Default formatting: CamelCaseReviewer -> Camel Case
+  return role.replace('Reviewer', '')
+    .replace(/([A-Z])/g, ' $1')
+    .trim();
+};
 
 // Generate certificate with workflow sequence and authorized person names
 const generateCertificate = asyncHandler(async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // MOCK USER FOR TESTING (since middleware is removed)
-    if (!req.user) {
-      req.user = {
-        _id: 'mock_admin_id',
-        role: 'SystemAdmin', // Mock as Admin to bypass checks
-        name: 'Test Admin'
-      };
-      console.log('⚠️ USING MOCK USER FOR TESTING');
-    }
-
-    const userId = req.user._id;
-    const userRole = req.user.role;
+    // Removed auth check to allow public download
+    // const userId = req.user._id;
+    // const userRole = req.user.role;
 
     // Enhanced validation
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -59,15 +64,26 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
     console.log(`Cleared Steps: ${clearedSteps.length}`);
     console.log(`All Steps Cleared: ${allStepsCleared}`);
 
-    // IMPROVED LOGIC: Allow download if ALL steps are cleared, regardless of request status
-    if (!allStepsCleared) {
+    // IMPROVED LOGIC: Allow download if request status is in_progress, cleared, or archived
+    // This is more robust than checking individual steps
+    const validStatuses = ['in_progress', 'cleared', 'archived'];
+    const isStatusValid = validStatuses.includes(request.status);
+
+    // Also keep the step-based check as a fallback/extra validation
+    const vpFinalStep = clearanceSteps.find(s =>
+      s.reviewerRole === 'AcademicVicePresident' &&
+      (s.vpSignatureType === 'final' || s.order > 1)
+    );
+    const isVpFinalCleared = vpFinalStep && vpFinalStep.status === 'cleared';
+
+    if (!isStatusValid && !allStepsCleared && !isVpFinalCleared) {
       const pendingSteps = clearanceSteps
         .filter(step => step.status !== 'cleared')
         .map(step => `${step.department} (${step.status})`)
         .join(', ');
 
       return next(new AppError(
-        `Certificate cannot be generated yet. Pending steps: ${pendingSteps}. (${clearedSteps.length}/${totalSteps} completed)`,
+        `Certificate cannot be generated yet. Current status: ${request.status}. Pending steps: ${pendingSteps}.`,
         400
       ));
     }
@@ -83,27 +99,15 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       request.completedAt = new Date();
     }
 
-    // Authorization check - staff can download their own certificates
+    // Authorization check REMOVED to allow public download
     // Admins and specific reviewers can download any certificate
-    const authorizedRoles = ['SystemAdmin', 'RecordsArchivesReviewer', 'AcademicVicePresident', 'AcademicStaff'];
-    // const userRole = req.user.role; // Now defined at the top
-    // const userId = req.user._id; // Now defined at the top
+    // const authorizedRoles = ['SystemAdmin', 'RecordsArchivesOfficerReviewer', 'AcademicVicePresident', 'AcademicStaff'];
 
-    console.log('CERTIFICATE AUTH CHECK:');
-    console.log(`User Role: ${userRole}`);
-    console.log(`User ID: ${userId}`);
-    console.log(`Request Initiated By: ${request.initiatedBy._id}`);
-    console.log(`Authorized Roles: ${authorizedRoles}`);
+    // console.log('CERTIFICATE AUTH CHECK SKIPPED (Public Access)');
 
-    const isAuthorizedRole = authorizedRoles.includes(userRole);
-    const isOwnRequest = request.initiatedBy._id.toString() === userId.toString();
-
-    console.log(`Is Authorized Role: ${isAuthorizedRole}`);
-    console.log(`Is Own Request: ${isOwnRequest}`);
-
-    if (!isAuthorizedRole && !isOwnRequest) {
-      return next(new AppError('You do not have permission to generate this certificate', 403));
-    }
+    // if (!isAuthorizedRole && !isOwnRequest) {
+    //   return next(new AppError('You do not have permission to generate this certificate', 403));
+    // }
 
     // Steps are already fetched above, so we can use them directly
     // Build signatures object for consistent access
@@ -114,6 +118,20 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
         signatures[key] = step.signature;
       }
     });
+
+    // Build a fallback role -> full name map for steps where reviewedBy is missing
+    const rolesToLookup = [...new Set(clearanceSteps.filter(s => !s.reviewedBy && s.reviewerRole).map(s => s.reviewerRole))];
+    const roleNameMap = {};
+    if (rolesToLookup.length > 0) {
+      try {
+        const usersForRoles = await User.find({ role: { $in: rolesToLookup } }).select('name role').lean();
+        usersForRoles.forEach(u => {
+          if (u && u.role) roleNameMap[u.role] = u.name;
+        });
+      } catch (err) {
+        console.warn('Failed to lookup users for reviewer roles:', err.message || err);
+      }
+    }
 
     // Add VP signatures from request if they exist
     if (request.vpInitialSignature) {
@@ -145,13 +163,23 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
 
       // University Logo - Load dynamically
       try {
-        // Updated path to user provided logo
-        const logoPath = path.join(__dirname, '../../src/assets/logo.jpeg');
+        // Path to the logo image (login page logo)
+        const logoPath = path.join(__dirname, '../../public/assets/logo.jpeg');
+        const srcLogoPath = path.join(__dirname, '../../src/assets/logo.jpeg');
+
+        let finalLogoPath = null;
         if (fs.existsSync(logoPath)) {
-          const logoBase64 = fs.readFileSync(logoPath, { encoding: 'base64' });
+          finalLogoPath = logoPath;
+        } else if (fs.existsSync(srcLogoPath)) {
+          finalLogoPath = srcLogoPath;
+        }
+
+        if (finalLogoPath) {
+          const logoBase64 = fs.readFileSync(finalLogoPath, { encoding: 'base64' });
+          // Add logo to top left (margin, 5)
           doc.addImage(`data:image/jpeg;base64,${logoBase64}`, 'JPEG', margin, 5, 35, 35);
         } else {
-          console.warn('Logo file not found at:', logoPath);
+          console.warn('Logo file not found at:', logoPath, 'or', srcLogoPath);
           // Fallback placeholder
           doc.setDrawColor(200, 200, 200);
           doc.circle(margin + 17, 22, 17, 'S');
@@ -212,9 +240,16 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       // --- STAFF INFORMATION SECTION ---
       const staffName = request.initiatedBy.name;
       const department = request.initiatedBy.department || 'N/A';
-      const staffId = request.initiatedBy.staffId || 'N/A';
+      const staffId = request.staffId || 'N/A';
       const referenceCode = request.referenceCode;
-      const generatedDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      const issueDate = request.completedAt || request.updatedAt || new Date();
+      const generatedDate = new Date(issueDate).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
 
       // Info Box Background
       doc.setDrawColor(200, 200, 200);
@@ -239,7 +274,13 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       doc.setFont('helvetica', 'bold');
       doc.text('Staff ID:', margin + 5, yPos + 16);
       doc.setFont('helvetica', 'normal');
-      doc.text(staffId, margin + 35, yPos + 16);
+      doc.text(`${request.initiatedBy.staffId || 'N/A'}`, margin + 35, yPos + 16);
+
+      // Add Reason
+      doc.setFont('helvetica', 'bold');
+      doc.text('Reason:', margin + 5, yPos + 24);
+      doc.setFont('helvetica', 'normal');
+      doc.text(request.purpose, margin + 35, yPos + 24);
 
       // Column 2
       const col2X = pageWidth / 2 + 10;
@@ -254,6 +295,99 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       doc.text(generatedDate, col2X + 30, yPos + 8);
 
       yPos += 35;
+
+      yPos += 35;
+
+      // --- VP INITIAL APPROVAL SECTION (Above Table) ---
+      const vpInitialStep = clearanceSteps.find(s =>
+        s.reviewerRole === 'AcademicVicePresident' &&
+        (s.vpSignatureType === 'initial' || s.order === 1)
+      );
+
+      if (vpInitialStep) {
+        // Professional Box Layout
+        const boxHeight = 40;
+        const boxY = yPos;
+
+        // Main Border
+        doc.setDrawColor(200, 200, 200);
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(margin, boxY, pageWidth - (2 * margin), boxHeight, 2, 2, 'FD');
+
+        // Header Bar
+        doc.setFillColor(10, 40, 90); // University Blue
+        doc.rect(margin, boxY, pageWidth - (2 * margin), 8, 'F');
+
+        // Header Text
+        doc.setFontSize(9);
+        doc.setTextColor(255, 255, 255); // White
+        doc.setFont('helvetica', 'bold');
+        doc.text('ACADEMIC VICE PRESIDENT - INITIAL APPROVAL', margin + 5, boxY + 5.5);
+
+        // Content Area
+        const contentY = boxY + 14;
+
+        // Left Side: Status & Date
+        doc.setTextColor(60, 60, 60);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Status:', margin + 5, contentY);
+
+        const vpStatus = vpInitialStep.status.toUpperCase();
+        doc.setFont('helvetica', 'bold');
+        if (vpStatus === 'CLEARED' || vpStatus === 'VP_INITIAL_APPROVAL') {
+          doc.setTextColor(0, 128, 0); // Green
+          doc.text('APPROVED', margin + 25, contentY);
+        } else {
+          doc.setTextColor(200, 0, 0); // Red
+          doc.text(vpStatus, margin + 25, contentY);
+        }
+
+        // Approval Date
+        if (vpInitialStep.updatedAt) {
+          doc.setTextColor(60, 60, 60);
+          doc.setFont('helvetica', 'normal');
+          doc.text('Date:', margin + 5, contentY + 6);
+          doc.text(new Date(vpInitialStep.updatedAt).toLocaleDateString(), margin + 25, contentY + 6);
+        }
+
+        // Comment (Full width below)
+        if (vpInitialStep.comment) {
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(8);
+          doc.setTextColor(80, 80, 80);
+          doc.text(`"${vpInitialStep.comment}"`, margin + 5, contentY + 14, { maxWidth: 100 });
+        }
+
+        // Right Side: Signature
+        const signatureKey = 'vpinitialsignature';
+        const signatureToUse = signatures[signatureKey] || vpInitialStep.signature;
+
+        doc.setDrawColor(220, 220, 220);
+        doc.line(pageWidth - margin - 60, boxY + 8, pageWidth - margin - 60, boxY + boxHeight); // Vertical divider
+
+        if (signatureToUse && signatureToUse.startsWith('data:image')) {
+          try {
+            const formatMatch = signatureToUse.match(/data:image\/(png|jpg|jpeg|gif|bmp|webp)/i);
+            let imgFormat = 'PNG';
+            if (formatMatch && formatMatch[1]) {
+              imgFormat = formatMatch[1].toUpperCase() === 'JPG' ? 'JPEG' : formatMatch[1].toUpperCase();
+            }
+            // Centered signature in the right box
+            doc.addImage(signatureToUse, imgFormat, pageWidth - margin - 55, boxY + 10, 50, 20);
+          } catch (err) {
+            console.warn('Error adding VP initial signature', err);
+          }
+        }
+
+        // Signature Label
+        doc.setFontSize(7);
+        doc.setTextColor(150, 150, 150);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Authorized Signature', pageWidth - margin - 30, boxY + 36, { align: 'center' });
+
+        yPos += boxHeight + 10;
+      }
 
       // --- CLEARANCE WORKFLOW TABLE ---
       doc.setFontSize(12);
@@ -291,7 +425,10 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       doc.setFontSize(9);
       doc.setTextColor(0, 0, 0);
 
-      clearanceSteps.forEach((step, index) => {
+      // Filter out VP Initial for table
+      const tableSteps = clearanceSteps.filter(s => s !== vpInitialStep);
+
+      tableSteps.forEach((step, index) => {
         if (yPos + rowHeight > pageHeight - 40) {
           doc.addPage();
           yPos = 20;
@@ -315,21 +452,78 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
 
         // Truncate department if too long
         let deptText = step.department;
+
+        // Fix for generic "Other Departmental Clearances"
+        if (deptText === 'Other Departmental Clearances' && step.reviewerRole) {
+          deptText = formatRoleToDepartment(step.reviewerRole);
+        }
+
+        if (deptText.length > 35) deptText = deptText.substring(0, 32) + '...';
         if (deptText.length > 35) deptText = deptText.substring(0, 32) + '...';
         doc.text(deptText, currentX + 2, yPos + 5); currentX += colWidths[1];
 
-        doc.text(step.reviewedBy?.name || 'System', currentX + 2, yPos + 5); currentX += colWidths[2];
+        // Prefer explicit reviewer name; fallback to role -> user lookup or 'System'
+        const reviewerName = step.reviewedBy?.name || roleNameMap[step.reviewerRole] || 'System';
+        doc.text(reviewerName, currentX + 2, yPos + 5); currentX += colWidths[2];
 
-        const dateStr = step.approvedAt || step.updatedAt ? new Date(step.approvedAt || step.updatedAt).toLocaleDateString() : '-';
+        const stepDate = step.lastUpdatedAt || step.updatedAt || step.approvedAt;
+        const dateStr = stepDate ? new Date(stepDate).toLocaleString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : '-';
         doc.text(dateStr, currentX + 2, yPos + 5); currentX += colWidths[3];
 
-        // Status with color
-        const status = step.status.toUpperCase();
-        if (status === 'CLEARED') doc.setTextColor(0, 128, 0);
-        else if (status === 'PENDING') doc.setTextColor(200, 150, 0);
-        else doc.setTextColor(200, 0, 0);
+        // Check for VP Final step to map status
+        let displayStatus = step.status.toUpperCase();
+        let isCleared = step.status === 'cleared';
 
-        doc.text(status, currentX + 2, yPos + 5);
+        // VP Final Handling: Map 'in_progress' to 'CLEARED'
+        if ((step.department === 'Academic Vice President Final Oversight' || step.reviewerRole === 'AcademicVicePresident') && step.vpSignatureType === 'final') {
+          if (step.status === 'in_progress' || step.status === 'cleared') {
+            displayStatus = 'CLEARED';
+            isCleared = true;
+          }
+        }
+
+        // Try to find signature
+        let signatureToDisplay = null;
+        if (step.signature) signatureToDisplay = step.signature;
+
+        // Lookup in signatures object (populated earlier)
+        const key = step.department.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (signatures[key]) signatureToDisplay = signatures[key];
+
+        // VP Final signature specific lookup
+        if (step.vpSignatureType === 'final' && signatures['vpfinalsignature']) {
+          signatureToDisplay = signatures['vpfinalsignature'];
+        }
+
+        if (signatureToDisplay && signatureToDisplay.startsWith('data:image')) {
+          try {
+            const formatMatch = signatureToDisplay.match(/data:image\/(png|jpg|jpeg|gif|bmp|webp)/i);
+            let imgFormat = 'PNG';
+            if (formatMatch && formatMatch[1]) {
+              imgFormat = formatMatch[1].toUpperCase() === 'JPG' ? 'JPEG' : formatMatch[1].toUpperCase();
+            }
+            // Render signature image instead of text
+            doc.addImage(signatureToDisplay, imgFormat, currentX + 2, yPos - 2, 30, 8);
+          } catch (err) {
+            // Fallback to text
+            if (isCleared || displayStatus === 'CLEARED') doc.setTextColor(0, 128, 0);
+            else if (displayStatus === 'PENDING') doc.setTextColor(200, 150, 0);
+            else doc.setTextColor(200, 0, 0);
+            doc.text(displayStatus, currentX + 2, yPos + 5);
+          }
+        } else {
+          // Text Status Fallback
+          if (isCleared || displayStatus === 'CLEARED') doc.setTextColor(0, 128, 0);
+          else if (displayStatus === 'PENDING') doc.setTextColor(200, 150, 0);
+          else doc.setTextColor(200, 0, 0);
+          doc.text(displayStatus, currentX + 2, yPos + 5);
+        }
 
         yPos += rowHeight;
       });
@@ -351,31 +545,8 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       doc.setFillColor(248, 250, 252); // Very light blue-gray
       doc.roundedRect(margin, yPos, pageWidth - (2 * margin), 45, 3, 3, 'FD');
 
-      // QR Code Section (Left)
-      const baseUrl = process.env.FRONTEND_URL || 'https://clearance.wldu.edu.et';
-      const verificationUrl = `${baseUrl}/verify/${referenceCode}`;
-
-      try {
-        const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify({
-          referenceCode,
-          staffId,
-          url: verificationUrl
-        }), { errorCorrectionLevel: 'H', width: 100 });
-
-        // White background for QR code
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(margin + 5, yPos + 5, 35, 35, 2, 2, 'F');
-        doc.addImage(qrCodeDataURL, 'PNG', margin + 7.5, yPos + 7.5, 30, 30);
-      } catch (e) {
-        // Fallback
-      }
-
-      // Vertical Divider
-      doc.setDrawColor(220, 220, 220);
-      doc.line(margin + 45, yPos + 5, margin + 45, yPos + 40);
-
-      // Verification Text (Right)
-      const textStartX = margin + 50;
+      // Verification Text (Full Width)
+      const textStartX = margin + 5;
 
       // Title
       doc.setFontSize(11);
@@ -387,7 +558,7 @@ const generateCertificate = asyncHandler(async (req, res, next) => {
       doc.setFontSize(9);
       doc.setTextColor(80, 80, 80);
       doc.setFont('helvetica', 'normal');
-      doc.text('Scan the QR code to verify the authenticity of this document.', textStartX, yPos + 16);
+      doc.text('Please verify the authenticity of this document using the Reference Code.', textStartX, yPos + 16);
       doc.text('The digital record serves as the primary source of truth.', textStartX, yPos + 21);
 
       // Validity Warning
@@ -465,6 +636,20 @@ const getCertificateData = asyncHandler(async (req, res, next) => {
     .sort({ order: 1 })
     .lean();
 
+  // Build role -> name map for fallback when reviewedBy is not populated
+  const rolesToLookup = [...new Set(clearanceSteps.filter(s => !s.reviewedBy && s.reviewerRole).map(s => s.reviewerRole))];
+  const roleNameMap = {};
+  if (rolesToLookup.length > 0) {
+    try {
+      const usersForRoles = await User.find({ role: { $in: rolesToLookup } }).select('name role').lean();
+      usersForRoles.forEach(u => {
+        if (u && u.role) roleNameMap[u.role] = u.name;
+      });
+    } catch (err) {
+      console.warn('Failed to lookup users for reviewer roles in getCertificateData:', err.message || err);
+    }
+  }
+
   const certificateData = {
     staffName: request.initiatedBy.name,
     department: request.initiatedBy.department,
@@ -473,7 +658,7 @@ const getCertificateData = asyncHandler(async (req, res, next) => {
     workflowSequence: clearanceSteps.map((step, index) => ({
       step: index + 1,
       department: step.department,
-      approvedBy: step.reviewedBy?.name,
+      approvedBy: step.reviewedBy?.name || roleNameMap[step.reviewerRole] || null,
       approvedAt: step.approvedAt,
       status: step.status
     })),

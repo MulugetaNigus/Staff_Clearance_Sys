@@ -1,9 +1,21 @@
-const express = require('express'); // Server entry point - forcing restart
+const express = require('express');
+const dns = require('dns');
+// Force IPv4 ordering to fix Node 17+ connection issues in some environments (like Render)
+dns.setDefaultResultOrder('ipv4first');
+
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-require('dotenv').config();
+const path = require('path');
+
+// Try to load .env from current directory first, then fallback to explicit Backend path
+const dotenv = require('dotenv');
+const envResult = dotenv.config();
+if (envResult.error) {
+  // If failed (maybe because we are in root), try specific path
+  dotenv.config({ path: path.join(__dirname, '.env') });
+}
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');

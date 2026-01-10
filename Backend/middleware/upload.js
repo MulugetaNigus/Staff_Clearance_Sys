@@ -80,4 +80,7 @@ const upload = multer({
 // Middleware for handling multiple file uploads
 const uploadClearanceFiles = upload.array('clearanceFiles', 10); // 'clearanceFiles' is the field name, 10 is max files
 
-module.exports = { upload, uploadClearanceFiles };
+// Middleware for handling single file replacement
+const uploadSingleClearanceFile = upload.single('clearanceFile'); // 'clearanceFile' is the single-file field name
+
+module.exports = { upload, uploadClearanceFiles, uploadSingleClearanceFile };

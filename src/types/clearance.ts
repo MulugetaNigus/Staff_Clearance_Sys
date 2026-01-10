@@ -18,6 +18,7 @@ export interface ClearanceStep {
   interdependentWith?: string[];
   vpSignatureType?: 'initial' | 'final';
   canProcess?: boolean;
+  ownerResponses?: { user: { _id?: string; name?: string }; comment: string; createdAt: string }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -51,13 +52,15 @@ export interface ClearanceRequest {
   hrSignature?: string;
   vpInitialSignature?: string;
   vpFinalSignature?: string;
-  vpInitialSignedAt?: string;
   vpFinalSignedAt?: string;
+  vpInitialSignedAt?: string;
   archivedAt?: string;
-  formData: {
-    purpose: string;
+  formData?: {
     teacherId: string;
     department: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
     fileMetadata?: Array<{ fileName: string; visibility: string }>;
   };
   reviewedBy?: {
@@ -65,6 +68,7 @@ export interface ClearanceRequest {
     name: string;
   };
   uploadedFiles: UploadedFile[];
+  isReadyForFinal?: boolean;
   createdAt: string;
   updatedAt: string;
   steps: ClearanceStep[];

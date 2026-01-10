@@ -11,34 +11,46 @@ const InitialApproval: React.FC = () => {
   // Mock data for pending initial approvals
   const mockPendingInitialApprovals: ClearanceRequest[] = [
     {
-      id: 'req-001',
+      _id: 'req-001',
+      referenceCode: 'REF-001',
       staffId: 'WU-001',
-      reason: 'EndOfContract',
-      status: 'PendingInitialApproval',
-      initiatedAt: new Date('2025-07-29'),
+      initiatedBy: { _id: 'user-001', name: 'John Doe' },
+      purpose: 'EndOfContract',
+      status: 'initiated',
+      initiatedAt: new Date('2025-07-29').toISOString(),
+      createdAt: new Date('2025-07-29').toISOString(),
+      updatedAt: new Date('2025-07-29').toISOString(),
+      uploadedFiles: [],
+      steps: []
     },
     {
-      id: 'req-002',
-      staffId: 'WU-002', 
-      reason: 'Retirement',
-      status: 'PendingInitialApproval',
-      initiatedAt: new Date('2025-07-30'),
+      _id: 'req-002',
+      referenceCode: 'REF-002',
+      staffId: 'WU-002',
+      initiatedBy: { _id: 'user-002', name: 'Jane Smith' },
+      purpose: 'Retirement',
+      status: 'initiated',
+      initiatedAt: new Date('2025-07-30').toISOString(),
+      createdAt: new Date('2025-07-30').toISOString(),
+      updatedAt: new Date('2025-07-30').toISOString(),
+      uploadedFiles: [],
+      steps: []
     }
   ];
 
   const handleInitialApproval = async (requestId: string, action: 'approve' | 'reject') => {
     setIsSubmitting(true);
-    
+
     // Mock API call
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     if (action === 'approve') {
       console.log(`Initial approval granted for request ${requestId}`);
       // This would trigger creation of all 27 departmental review steps
     } else {
       console.log(`Initial approval rejected for request ${requestId}: ${rejectionReason}`);
     }
-    
+
     setIsSubmitting(false);
     setReviewingRequest(null);
     setRejectionReason('');
@@ -74,17 +86,17 @@ const InitialApproval: React.FC = () => {
           </div>
         ) : (
           mockPendingInitialApprovals.map((request) => (
-            <div key={request.id} className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <div key={request._id} className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900">
-                    Initial Approval - Request #{request.id.toUpperCase()}
+                    Initial Approval - Request #{request.referenceCode}
                   </h3>
                   <p className="text-gray-600">
-                    Staff ID: {request.staffId} • Reason: {request.reason.replace(/([A-Z])/g, ' $1').trim()}
+                    Staff ID: {request.staffId} • Purpose: {request.purpose}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
-                    Submitted: {request.initiatedAt.toLocaleDateString()}
+                    Submitted: {new Date(request.initiatedAt).toLocaleDateString()}
                   </p>
                 </div>
                 <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
@@ -111,24 +123,24 @@ const InitialApproval: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-gray-600">Department:</span>
-                    <span className="font-medium text-gray-900 ml-2">Computer Science</span>
+                    <span className="font-medium text-gray-900 ml-2">{request.formData?.department || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Clearance Reason:</span>
+                    <span className="text-gray-600">Clearance Purpose:</span>
                     <span className="font-medium text-gray-900 ml-2">
-                      {request.reason.replace(/([A-Z])/g, ' $1').trim()}
+                      {request.purpose}
                     </span>
                   </div>
                   <div>
                     <span className="text-gray-600">Request Date:</span>
                     <span className="font-medium text-gray-900 ml-2">
-                      {request.initiatedAt.toLocaleDateString()}
+                      {new Date(request.initiatedAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {reviewingRequest === request.id ? (
+              {reviewingRequest === request._id ? (
                 <div className="border-t pt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Reason for Rejection:
@@ -152,7 +164,7 @@ const InitialApproval: React.FC = () => {
                       Cancel
                     </button>
                     <button
-                      onClick={() => handleReject(request.id)}
+                      onClick={() => handleReject(request._id)}
                       disabled={isSubmitting || !rejectionReason.trim()}
                       className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center space-x-2"
                     >
@@ -170,14 +182,14 @@ const InitialApproval: React.FC = () => {
               ) : (
                 <div className="flex justify-end space-x-3">
                   <button
-                    onClick={() => setReviewingRequest(request.id)}
+                    onClick={() => setReviewingRequest(request._id)}
                     className="px-6 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
                     disabled={isSubmitting}
                   >
                     Reject Request
                   </button>
                   <button
-                    onClick={() => handleInitialApproval(request.id, 'approve')}
+                    onClick={() => handleInitialApproval(request._id, 'approve')}
                     disabled={isSubmitting}
                     className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center space-x-2"
                   >

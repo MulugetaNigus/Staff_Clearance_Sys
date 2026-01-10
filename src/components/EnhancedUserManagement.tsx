@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { getAllUsers, deleteUser, toggleUserStatus, resetUserPassword, createUser, type CreateUserData } from '../services/userService';
-import { emailService } from '../services/emailService';
 import { toastUtils } from '../utils/toastUtils';
 
 interface User {
@@ -49,6 +48,13 @@ const USER_ROLES = [
   { value: 'FacilitiesReviewer', label: 'Facilities Reviewer' },
   { value: 'CaseExecutiveReviewer', label: 'Case Executive Reviewer' },
   { value: 'HRDevelopmentReviewer', label: 'HR Development Reviewer' },
+  // Workflow.js critical roles (Orders 5-13)
+  { value: 'ICTExecutiveReviewer', label: 'ICT Executive Reviewer' },
+  { value: 'PropertyExecutiveDirectorReviewer', label: 'Property Executive Director Reviewer' },
+  { value: 'SeniorFinanceSpecialistReviewer', label: 'Senior Finance Specialist Reviewer' },
+  { value: 'InternalAuditExecutiveDirectorReviewer', label: 'Internal Audit Executive Director' },
+  { value: 'HRCompetencyDevelopmentReviewer', label: 'HR Competency Development Team Leader' },
+  { value: 'RecordsArchivesOfficerReviewer', label: 'Records & Archives Officer' },
 ];
 
 const EnhancedUserManagement: React.FC = () => {
@@ -60,6 +66,7 @@ const EnhancedUserManagement: React.FC = () => {
   const [newUser, setNewUser] = useState<CreateUserData>({
     name: '',
     email: '',
+    password: '',
     role: 'AcademicStaff',
     department: '',
     contactInfo: '',
@@ -90,7 +97,7 @@ const EnhancedUserManagement: React.FC = () => {
       toastUtils.dismiss(loadingToast);
       toastUtils.success('User created successfully!');
       fetchUsers();
-      setNewUser({ name: '', email: '', role: 'AcademicStaff', department: '', contactInfo: '' });
+      setNewUser({ name: '', email: '', password: '', role: 'AcademicStaff', department: '', contactInfo: '' });
       setShowCreateForm(false);
     } catch (error: any) {
       console.error('Failed to create user:', error);
@@ -121,17 +128,11 @@ const EnhancedUserManagement: React.FC = () => {
       const loadingToast = toastUtils.loading(`${user.isActive ? 'Deactivating' : 'Activating'} user...`);
       await toggleUserStatus(userId);
       toastUtils.dismiss(loadingToast);
-      
+
       user.isActive = !user.isActive;
       setUsers([...users]);
-      
+
       toastUtils.success(`User ${user.isActive ? 'activated' : 'deactivated'} successfully!`);
-      
-      await emailService.sendAccountStatusEmail({
-        to_email: user.email,
-        to_name: user.name,
-        status: user.isActive ? 'activated' : 'deactivated'
-      });
     } catch (error: any) {
       console.error('Failed to toggle user status:', error);
       toastUtils.error(error.message || 'Failed to toggle user status');
@@ -145,15 +146,9 @@ const EnhancedUserManagement: React.FC = () => {
 
       if (window.confirm(`Are you sure you want to reset ${user.name}'s password? They will be notified via email.`)) {
         const loadingToast = toastUtils.loading('Resetting password...');
-        const { newPassword } = await resetUserPassword(userId);
+        await resetUserPassword(userId);
         toastUtils.dismiss(loadingToast);
         toastUtils.success('Password reset successfully! User has been notified via email.');
-        
-        await emailService.sendPasswordResetEmail({
-          to_email: user.email,
-          to_name: user.name,
-          new_password: newPassword
-        });
       }
     } catch (error: any) {
       console.error('Failed to reset password:', error);
@@ -163,8 +158,8 @@ const EnhancedUserManagement: React.FC = () => {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.department.toLowerCase().includes(searchTerm.toLowerCase());
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.department.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === '' || user.role === filterRole;
     return matchesSearch && matchesRole;
   });
@@ -235,6 +230,18 @@ const EnhancedUserManagement: React.FC = () => {
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter contact information"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter password (min 6 chars)"
+                  minLength={6}
                 />
               </div>
               <div className="md:col-span-2">
@@ -342,22 +349,20 @@ const EnhancedUserManagement: React.FC = () => {
                       {user.department}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.isActive
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                        }`}>
                         {user.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <button
                         onClick={() => handleToggleStatus(user._id)}
-                        className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors duration-200 ${
-                          user.isActive 
-                            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
-                            : 'bg-green-100 text-green-800 hover:bg-green-200'
-                        }`}
+                        className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors duration-200 ${user.isActive
+                          ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                          : 'bg-green-100 text-green-800 hover:bg-green-200'
+                          }`}
                       >
                         {user.isActive ? 'Deactivate' : 'Activate'}
                       </button>
